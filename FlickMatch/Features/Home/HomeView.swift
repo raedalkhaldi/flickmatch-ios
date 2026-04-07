@@ -2,8 +2,8 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var coordinator: AppCoordinator
-    @StateObject private var moviesVM = RatingViewModel(contentType: .movies)
-    @StateObject private var seriesVM = RatingViewModel(contentType: .series)
+    @StateObject private var moviesVM = RatingViewModel(contentType: .movie)
+    @StateObject private var seriesVM  = RatingViewModel(contentType: .series)
 
     private var currentVM: RatingViewModel {
         coordinator.selectedContentType == .movies ? moviesVM : seriesVM

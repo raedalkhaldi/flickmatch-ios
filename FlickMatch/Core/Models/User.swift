@@ -17,6 +17,7 @@ struct AppUser: Identifiable, Codable {
 }
 
 struct UserProfile: Identifiable, Codable {
+    var id: String { user.id }
     let user: AppUser
     let topMovies: [RankedMedia]
     let topSeries: [RankedMedia]
