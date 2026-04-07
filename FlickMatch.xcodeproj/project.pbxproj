@@ -20,7 +20,6 @@
 		5C9796F9E18B4F3CCE026F93 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD1767172CF63404B1543E /* AppCoordinator.swift */; };
 		6865E5385C3583DD714FBC34 /* Recommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12022401E0C1F605B8F4801 /* Recommendation.swift */; };
 		77714CCB8B4730D54B07798B /* RatingPhaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1167D9991FFE4E2F54D93F /* RatingPhaseView.swift */; };
-		7C8FD8FEF7FB5F571A680757 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 12FC6685D20F33E94270C472 /* Kingfisher */; };
 		908D164D8480250F6CFFC233 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38704AB609DFA3895467E5DF /* APIClient.swift */; };
 		93D7DA708F8F164BCAEBB9A2 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1AECC56E6554FD80CBC66E /* AppTheme.swift */; };
 		940D4333FA616B41490B0C60 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D05E18F9A587E895C591F297 /* ProfileView.swift */; };
@@ -60,17 +59,6 @@
 		D4DE11EBCAD14645D5375CE6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F876771026CB992E34F4C25F /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		D3280CD33E81D6B191CB0B1D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				7C8FD8FEF7FB5F571A680757 /* Kingfisher in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		0F0A524E9F92DAD10714A1EC /* Services */ = {
@@ -240,16 +228,12 @@
 			buildConfigurationList = AEDBDD930AFD720C38E6B30C /* Build configuration list for PBXNativeTarget "FlickMatch" */;
 			buildPhases = (
 				F217F7FABDC1A0E0A55647E0 /* Sources */,
-				D3280CD33E81D6B191CB0B1D /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = FlickMatch;
-			packageProductDependencies = (
-				12FC6685D20F33E94270C472 /* Kingfisher */,
-			);
 			productName = FlickMatch;
 			productReference = AFD8ECE74DBA06B5CD9D9305 /* FlickMatch.app */;
 			productType = "com.apple.product-type.application";
@@ -274,9 +258,6 @@
 				en,
 			);
 			mainGroup = 593614074F5377D9ABD2DD36;
-			packageReferences = (
-				3502B2B7970CE260B352CAA0 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -381,25 +362,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		3502B2B7970CE260B352CAA0 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/onevcat/Kingfisher";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 7;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		12FC6685D20F33E94270C472 /* Kingfisher */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3502B2B7970CE260B352CAA0 /* XCRemoteSwiftPackageReference "Kingfisher" */;
-			productName = Kingfisher;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 677D01B50BE38CDE70AFA7EA /* Project object */;
 }

@@ -6,11 +6,6 @@ options:
   xcodeVersion: "14.2"
   createIntermediateGroups: true
 
-packages:
-  Kingfisher:
-    url: https://github.com/onevcat/Kingfisher
-    majorVersion: "7"
-
 targets:
   FlickMatch:
     type: application
@@ -34,5 +29,3 @@ targets:
       SWIFT_VERSION: "5.9"
       MARKETING_VERSION: "1.0"
       CURRENT_PROJECT_VERSION: "1"
-    dependencies:
-      - package: Kingfisher

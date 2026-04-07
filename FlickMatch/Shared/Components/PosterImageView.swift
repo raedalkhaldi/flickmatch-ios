@@ -1,5 +1,4 @@
 import SwiftUI
-import Kingfisher
 
 struct PosterImageView: View {
     let url: URL?
@@ -10,19 +9,20 @@ struct PosterImageView: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            KFImage(url)
-                .placeholder {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().scaledToFill()
+                case .failure, .empty:
                     Rectangle()
                         .fill(AppTheme.surface)
-                        .overlay(
-                            Image(systemName: "film")
-                                .foregroundColor(AppTheme.textDim)
-                        )
+                        .overlay(Image(systemName: "film").foregroundColor(AppTheme.textDim))
+                @unknown default:
+                    Rectangle().fill(AppTheme.surface)
                 }
-                .resizable()
-                .scaledToFill()
-                .frame(width: width, height: height)
-                .clipped()
+            }
+            .frame(width: width, height: height)
+            .clipped()
 
             // Rank badge
             if let rank {

@@ -1,4 +1,5 @@
 import Foundation
+// Note: Using SwiftUI AsyncImage for image loading (no external dependency needed)
 
 final class TMDbService {
     static let shared = TMDbService()
