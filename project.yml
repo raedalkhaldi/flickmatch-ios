@@ -12,20 +12,15 @@ targets:
     platform: iOS
     deploymentTarget: "16.0"
     sources:
-      - FlickMatch
-    info:
-      path: FlickMatch/Info.plist
-      properties:
-        CFBundleDisplayName: FlickMatch
-        CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "1"
-        UILaunchStoryboardName: LaunchScreen
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-        NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: false
+      - path: FlickMatch
+        excludes:
+          - Info.plist
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.flickmatch.app
       SWIFT_VERSION: "5.9"
       MARKETING_VERSION: "1.0"
       CURRENT_PROJECT_VERSION: "1"
+      GENERATE_INFOPLIST_FILE: YES
+      INFOPLIST_KEY_CFBundleDisplayName: FlickMatch
+      INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen
+      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
