@@ -1,0 +1,65 @@
+import Foundation
+
+final class TMDbService {
+    static let shared = TMDbService()
+    private init() {}
+
+    private let client = APIClient.shared
+
+    // MARK: - Movies
+    func fetchTopMovies(page: Int = 1) async throws -> [Movie] {
+        let response: MovieResponse = try await client.fetch(TMDbEndpoint.topMovies(page: page))
+        return response.results
+    }
+
+    func fetchMovieDetails(id: Int) async throws -> Movie {
+        return try await client.fetch(TMDbEndpoint.movieDetails(id: id))
+    }
+
+    func fetchMovieTrailer(id: Int) async throws -> VideoResult? {
+        let response: VideoResponse = try await client.fetch(TMDbEndpoint.movieTrailers(id: id))
+        return response.results.first(where: { $0.isYouTubeTrailer })
+            ?? response.results.first(where: { $0.site == "YouTube" })
+    }
+
+    // MARK: - Series
+    func fetchTopSeries(page: Int = 1) async throws -> [Series] {
+        let response: SeriesResponse = try await client.fetch(TMDbEndpoint.topSeries(page: page))
+        return response.results
+    }
+
+    func fetchSeriesDetails(id: Int) async throws -> Series {
+        return try await client.fetch(TMDbEndpoint.seriesDetails(id: id))
+    }
+
+    func fetchSeriesTrailer(id: Int) async throws -> VideoResult? {
+        let response: VideoResponse = try await client.fetch(TMDbEndpoint.seriesTrailers(id: id))
+        return response.results.first(where: { $0.isYouTubeTrailer })
+            ?? response.results.first(where: { $0.site == "YouTube" })
+    }
+
+    // MARK: - Genres
+    func fetchMovieGenres() async throws -> [Genre] {
+        let response: GenreResponse = try await client.fetch(TMDbEndpoint.movieGenres)
+        return response.genres
+    }
+
+    func fetchSeriesGenres() async throws -> [Genre] {
+        let response: GenreResponse = try await client.fetch(TMDbEndpoint.seriesGenres)
+        return response.genres
+    }
+
+    // MARK: - Rating Rounds
+    // Returns 10 items per round (page-based)
+    func fetchRatingRound(contentType: ContentItemType, round: Int) async throws -> [AnyMedia] {
+        let page = round
+        switch contentType {
+        case .movie:
+            let movies = try await fetchTopMovies(page: page)
+            return Array(movies.prefix(10)).map { .movie($0) }
+        case .series:
+            let series = try await fetchTopSeries(page: page)
+            return Array(series.prefix(10)).map { .series($0) }
+        }
+    }
+}
