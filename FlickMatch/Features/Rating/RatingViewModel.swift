@@ -25,6 +25,7 @@ final class RatingViewModel: ObservableObject {
     let contentType: ContentItemType
     private let tmdb = TMDbService.shared
     private let store = RatingStore.shared
+    private let firestore = FirestoreService.shared
     private let maxRounds = 3
 
     var ratedCount: Int {
@@ -94,16 +95,23 @@ final class RatingViewModel: ObservableObject {
                 score: score
             )
         }
-        // Persist locally
+        // Persist locally + Firestore
         let media = mediaItems.first { $0.id == contentId }
-        store.save(
-            contentId: contentId,
-            contentType: contentType,
-            score: score ?? 0,
-            title: media?.title ?? "",
-            posterPath: media?.posterPath ?? "",
-            year: media?.year ?? ""
-        )
+        let title = media?.title ?? ""
+        let poster = media?.posterPath ?? ""
+        let year = media?.year ?? ""
+        store.save(contentId: contentId, contentType: contentType,
+                   score: score ?? 0, title: title, posterPath: poster, year: year)
+        // Sync to Firestore
+        if let uid = AuthService.shared.currentUser?.uid {
+            Task {
+                await firestore.saveRating(
+                    userId: uid, contentId: contentId,
+                    contentType: contentType.rawValue,
+                    score: score ?? 0, title: title, posterPath: poster, year: year
+                )
+            }
+        }
     }
 
     func setNotSeen(contentId: Int, notSeen: Bool) {
