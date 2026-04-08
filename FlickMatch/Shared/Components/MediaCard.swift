@@ -76,46 +76,56 @@ struct MediaCard: View {
             }
             .padding(14)
 
-            // Bottom: rating row
-            HStack(spacing: 8) {
-                StarRatingView(rating: Binding(
-                    get: { hasNotSeen ? nil : rating },
-                    set: { newVal in
-                        rating = newVal
-                        if newVal != nil { hasNotSeen = false }
+            // Bottom: rating section
+            VStack(spacing: 8) {
+                // Stars row
+                HStack(spacing: 8) {
+                    StarRatingView(rating: Binding(
+                        get: { hasNotSeen ? nil : rating },
+                        set: { newVal in
+                            rating = newVal
+                            if newVal != nil { hasNotSeen = false }
+                        }
+                    ))
+                    .opacity(hasNotSeen ? 0.3 : 1.0)
+
+                    Spacer()
+
+                    // Rating number
+                    if let r = rating, !hasNotSeen {
+                        Text("\(r)/10")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(AppTheme.gold)
                     }
-                ))
-                .opacity(hasNotSeen ? 0.3 : 1.0)
-
-                Spacer()
-
-                // Rating number
-                if let r = rating, !hasNotSeen {
-                    Text("\(r)")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(AppTheme.gold)
                 }
 
-                // Haven't seen button
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        hasNotSeen.toggle()
-                        if hasNotSeen { rating = nil }
-                    }
-                } label: {
-                    Text("ما شفته")
-                        .font(AppTheme.arabic(11))
+                // "Haven't seen" button — below stars
+                HStack {
+                    Spacer()
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            hasNotSeen.toggle()
+                            if hasNotSeen { rating = nil }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: hasNotSeen ? "eye.slash.fill" : "eye.slash")
+                                .font(.system(size: 11))
+                            Text("ما شفته")
+                                .font(AppTheme.arabic(11, weight: .medium))
+                        }
                         .foregroundColor(hasNotSeen ? AppTheme.accent : AppTheme.textDim)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(hasNotSeen ? AppTheme.accent.opacity(0.08) : AppTheme.surface)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(hasNotSeen ? AppTheme.accent.opacity(0.1) : AppTheme.surface)
                         .overlay(
                             Capsule().stroke(
-                                hasNotSeen ? AppTheme.accent.opacity(0.4) : Color(hex: "#252530"),
+                                hasNotSeen ? AppTheme.accent.opacity(0.5) : Color(hex: "#252530"),
                                 lineWidth: 1
                             )
                         )
                         .clipShape(Capsule())
+                    }
                 }
             }
             .padding(.horizontal, 14)

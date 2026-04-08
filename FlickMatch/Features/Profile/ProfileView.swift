@@ -106,6 +106,11 @@ struct ProfileView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: selectedTab)
         .task { await loadFollowing() }
+        .onChange(of: selectedTab) { newTab in
+            if newTab == .following {
+                Task { await loadFollowing() }
+            }
+        }
     }
 
     // MARK: - Top List

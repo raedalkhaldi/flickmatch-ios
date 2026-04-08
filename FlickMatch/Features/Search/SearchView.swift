@@ -120,78 +120,123 @@ struct SearchView: View {
     }
 }
 
-// MARK: - Empty State with trending posters
+// MARK: - Empty State with trending content (tabs + infinite scroll)
 struct SearchEmptyState: View {
-    @State private var trendingMovies: [AnyMedia] = []
-    @State private var trendingSeries: [AnyMedia] = []
-    @State private var isLoading = true
+    enum SuggestionTab { case movies, series }
+    @State private var selectedTab: SuggestionTab = .movies
+    @State private var movies: [AnyMedia] = []
+    @State private var series: [AnyMedia] = []
+    @State private var moviePage = 1
+    @State private var seriesPage = 1
+    @State private var isLoadingMore = false
+    @State private var isInitialLoad = true
 
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                // Movies section
-                if !trendingMovies.isEmpty {
-                    Text("🎬 أفلام رائجة")
-                        .font(AppTheme.arabic(16, weight: .bold))
-                        .foregroundColor(AppTheme.textPrimary)
-                        .padding(.horizontal, 20)
-
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(trendingMovies) { media in
-                                NavigationLink(value: media) {
-                                    SuggestionPosterCard(media: media)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                }
-
-                // Series section
-                if !trendingSeries.isEmpty {
-                    Text("📺 مسلسلات رائجة")
-                        .font(AppTheme.arabic(16, weight: .bold))
-                        .foregroundColor(AppTheme.textPrimary)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
-
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(trendingSeries) { media in
-                                NavigationLink(value: media) {
-                                    SuggestionPosterCard(media: media)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                }
-
-                if isLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView().tint(AppTheme.gold)
-                        Spacer()
-                    }
-                    .padding(.top, 60)
-                }
-            }
-            .padding(.top, 14)
-            .padding(.bottom, 20)
-        }
-        .task { await loadTrending() }
+    private var currentItems: [AnyMedia] {
+        selectedTab == .movies ? movies : series
     }
 
-    private func loadTrending() async {
+    var body: some View {
+        VStack(spacing: 0) {
+            // Tabs
+            HStack(spacing: 0) {
+                SuggestionTabButton(title: "🎬 أفلام", isSelected: selectedTab == .movies) {
+                    selectedTab = .movies
+                }
+                SuggestionTabButton(title: "📺 مسلسلات", isSelected: selectedTab == .series) {
+                    selectedTab = .series
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
+            if isInitialLoad {
+                Spacer()
+                ProgressView().tint(AppTheme.gold)
+                Spacer()
+            } else {
+                ScrollView(showsIndicators: false) {
+                    let columns = [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12)
+                    ]
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(currentItems) { media in
+                            NavigationLink(value: media) {
+                                SuggestionPosterCard(media: media)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
+
+                    // Load more trigger
+                    if !currentItems.isEmpty {
+                        if isLoadingMore {
+                            ProgressView().tint(AppTheme.gold)
+                                .padding(.vertical, 16)
+                        } else {
+                            Color.clear
+                                .frame(height: 1)
+                                .onAppear { Task { await loadMore() } }
+                        }
+                    }
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: selectedTab)
+        .task { await loadInitial() }
+    }
+
+    private func loadInitial() async {
         do {
-            async let movies = TMDbService.shared.fetchTopMovies(page: 1)
-            async let series = TMDbService.shared.fetchTopSeries(page: 1)
-            let (m, s) = try await (movies, series)
-            trendingMovies = m.prefix(10).map { .movie($0) }
-            trendingSeries = s.prefix(10).map { .series($0) }
+            async let m = TMDbService.shared.fetchTopMovies(page: 1)
+            async let s = TMDbService.shared.fetchTopSeries(page: 1)
+            let (moviesResult, seriesResult) = try await (m, s)
+            movies = moviesResult.map { .movie($0) }
+            series = seriesResult.map { .series($0) }
         } catch {}
-        isLoading = false
+        isInitialLoad = false
+    }
+
+    private func loadMore() async {
+        guard !isLoadingMore else { return }
+        isLoadingMore = true
+        do {
+            if selectedTab == .movies {
+                moviePage += 1
+                let more = try await TMDbService.shared.fetchTopMovies(page: moviePage)
+                movies.append(contentsOf: more.map { .movie($0) })
+            } else {
+                seriesPage += 1
+                let more = try await TMDbService.shared.fetchTopSeries(page: seriesPage)
+                series.append(contentsOf: more.map { .series($0) })
+            }
+        } catch {}
+        isLoadingMore = false
+    }
+}
+
+// MARK: - Suggestion Tab Button
+struct SuggestionTabButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(AppTheme.arabic(13, weight: isSelected ? .bold : .regular))
+                    .foregroundColor(isSelected ? AppTheme.gold : AppTheme.textDim)
+                Rectangle()
+                    .fill(isSelected ? AppTheme.gold : Color.clear)
+                    .frame(height: 2)
+                    .cornerRadius(1)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -210,7 +255,8 @@ struct SuggestionPosterCard: View {
                         .overlay(Image(systemName: "film").foregroundColor(AppTheme.textDim))
                 }
             }
-            .frame(width: 100, height: 150)
+            .frame(maxWidth: .infinity)
+            .aspectRatio(2/3, contentMode: .fit)
             .cornerRadius(10)
             .clipped()
 
@@ -234,7 +280,6 @@ struct SuggestionPosterCard: View {
                         .foregroundColor(AppTheme.textDim)
                 }
             }
-            .frame(width: 100)
         }
     }
 }

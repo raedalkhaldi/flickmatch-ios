@@ -11,7 +11,7 @@ struct StarRatingView: View {
     }
 
     var body: some View {
-        HStack(spacing: 1) {
+        HStack(spacing: 0) {
             ForEach(1...maxRating, id: \.self) { star in
                 Button {
                     withAnimation(.easeInOut(duration: 0.12)) {
@@ -28,6 +28,8 @@ struct StarRatingView: View {
                         .frame(width: starSize, height: starSize)
                         .foregroundColor(star <= (rating ?? 0) ? AppTheme.gold : AppTheme.textDim.opacity(0.3))
                         .scaleEffect(star <= (rating ?? 0) ? 1.0 : 0.9)
+                        .frame(width: starSize + 6, height: starSize + 10)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
