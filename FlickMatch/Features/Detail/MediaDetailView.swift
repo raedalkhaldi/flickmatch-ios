@@ -136,27 +136,32 @@ struct MediaDetailView: View {
 
                     // Overview
                     if !displayMedia.overview.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .trailing, spacing: 10) {
                             Text("القصة")
                                 .font(AppTheme.arabic(16, weight: .bold))
                                 .foregroundColor(AppTheme.textPrimary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
 
                             Text(displayMedia.overview)
                                 .font(AppTheme.arabic(14))
                                 .foregroundColor(AppTheme.textDim)
-                                .lineSpacing(6)
+                                .lineSpacing(8)
+                                .multilineTextAlignment(.trailing)
                                 .lineLimit(showFullOverview ? nil : 4)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
 
                             if displayMedia.overview.count > 150 {
                                 Button {
                                     withAnimation { showFullOverview.toggle() }
                                 } label: {
-                                    Text(showFullOverview ? "أقل" : "المزيد...")
+                                    Text(showFullOverview ? "عرض أقل ←" : "عرض المزيد →")
                                         .font(AppTheme.arabic(13, weight: .semibold))
                                         .foregroundColor(AppTheme.gold)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .trailing)
                             }
                         }
+                        .environment(\.layoutDirection, .rightToLeft)
                         .padding(.horizontal, 20)
                         .padding(.top, -30)
                         .padding(.bottom, 30)
@@ -231,9 +236,19 @@ struct TrailerPlayerSection: View {
     var body: some View {
         VStack(spacing: 0) {
             if showPlayer {
-                YouTubePlayerView(videoKey: videoKey)
+                VideoPlayerView(videoKey: videoKey)
                     .frame(height: 220)
                     .cornerRadius(AppTheme.radius)
+                    .overlay(alignment: .topTrailing) {
+                        Button {
+                            withAnimation { showPlayer = false }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(8)
+                        }
+                    }
             } else {
                 Button {
                     withAnimation { showPlayer = true }
@@ -251,7 +266,7 @@ struct TrailerPlayerSection: View {
                             Text("شاهد التريلر")
                                 .font(AppTheme.arabic(15, weight: .bold))
                                 .foregroundColor(AppTheme.textPrimary)
-                            Text("YouTube")
+                            Text("من TMDb")
                                 .font(.system(size: 12))
                                 .foregroundColor(AppTheme.textDim)
                         }
