@@ -333,6 +333,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1420;
 				TargetAttributes = {
+					A9723D1EAF6F208A1DA20C19 = {
+						DevelopmentTeam = U85YJ96XU8;
+						ProvisioningStyle = Manual;
+					};
 				};
 			};
 			buildConfigurationList = C0F75302BFA2E1D1B4CB24B3 /* Build configuration list for PBXProject "FlickMatch" */;
@@ -429,7 +433,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U85YJ96XU8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FlickMatch;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -438,6 +445,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.flickmatch.app;
 				PRODUCT_NAME = FlickMatch;
+				PROVISIONING_PROFILE_SPECIFIER = "FlickMatch AppStore";
 				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
@@ -446,7 +454,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U85YJ96XU8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FlickMatch;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -455,6 +466,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.flickmatch.app;
 				PRODUCT_NAME = FlickMatch;
+				PROVISIONING_PROFILE_SPECIFIER = "FlickMatch AppStore";
 				SWIFT_VERSION = 5.9;
 			};
 			name = Debug;
