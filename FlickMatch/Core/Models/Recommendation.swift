@@ -10,9 +10,18 @@ struct Recommendation: Identifiable {
 }
 
 // MARK: - Type-erased wrapper for Movie/Series
-enum AnyMedia: Identifiable {
+enum AnyMedia: Identifiable, Hashable {
     case movie(Movie)
     case series(Series)
+
+    static func == (lhs: AnyMedia, rhs: AnyMedia) -> Bool {
+        lhs.id == rhs.id && lhs.contentType == rhs.contentType
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(contentType)
+    }
 
     var id: Int {
         switch self {
@@ -58,6 +67,27 @@ enum AnyMedia: Identifiable {
         switch self {
         case .movie:  return .movie
         case .series: return .series
+        }
+    }
+}
+
+// MARK: - StoredRating → AnyMedia
+extension StoredRating {
+    func toAnyMedia() -> AnyMedia {
+        if contentType == ContentItemType.movie.rawValue {
+            return .movie(Movie(
+                id: contentId, title: title, originalTitle: title, overview: "",
+                posterPath: posterPath.isEmpty ? nil : posterPath, backdropPath: nil,
+                voteAverage: Double(score), genreIds: [],
+                releaseDate: year.isEmpty ? nil : "\(year)-01-01"
+            ))
+        } else {
+            return .series(Series(
+                id: contentId, name: title, originalName: title, overview: "",
+                posterPath: posterPath.isEmpty ? nil : posterPath, backdropPath: nil,
+                voteAverage: Double(score), genreIds: [],
+                firstAirDate: year.isEmpty ? nil : "\(year)-01-01", numberOfSeasons: nil
+            ))
         }
     }
 }

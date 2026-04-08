@@ -4,17 +4,29 @@ struct ContentView: View {
     @EnvironmentObject var coordinator: AppCoordinator
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            AppTheme.background.ignoresSafeArea()
+        NavigationStack {
+            ZStack(alignment: .bottom) {
+                AppTheme.background.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                if coordinator.selectedTab == .home {
-                    TopBar()
+                VStack(spacing: 0) {
+                    if coordinator.selectedTab == .home {
+                        TopBar()
+                    }
+                    tabContent
                 }
-                tabContent
-            }
 
-            BottomNav()
+                BottomNav()
+            }
+            .navigationBarHidden(true)
+            .navigationDestination(for: AnyMedia.self) { media in
+                MediaDetailView(media: media)
+                    .navigationBarBackButtonHidden(true)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            BackButton()
+                        }
+                    }
+            }
         }
     }
 
@@ -26,6 +38,21 @@ struct ContentView: View {
         case .search:        SearchView()
         case .notifications: NotificationsView()
         case .profile:       ProfileView()
+        }
+    }
+}
+
+// MARK: - Back Button
+struct BackButton: View {
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        Button { dismiss() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.left")
+                Text("رجوع")
+                    .font(AppTheme.arabic(14))
+            }
+            .foregroundColor(AppTheme.gold)
         }
     }
 }

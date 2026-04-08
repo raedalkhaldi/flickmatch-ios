@@ -45,8 +45,10 @@ struct RecommendationsView: View {
             // Recommendation cards
             LazyVStack(spacing: 14) {
                 ForEach(vm.recommendations) { rec in
-                    RecommendationCard(recommendation: rec, genres: vm.genres)
-                        .padding(.horizontal, 20)
+                    NavigationLink(value: rec.media) {
+                        RecommendationCard(recommendation: rec, genres: vm.genres)
+                    }
+                    .padding(.horizontal, 20)
                 }
             }
 

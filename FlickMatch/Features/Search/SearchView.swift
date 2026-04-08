@@ -105,8 +105,10 @@ struct SearchView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 10) {
                             ForEach(vm.results) { media in
-                                SearchResultRow(media: media)
-                                    .padding(.horizontal, 20)
+                                NavigationLink(value: media) {
+                                    SearchResultRow(media: media)
+                                }
+                                .padding(.horizontal, 20)
                             }
                         }
                         .padding(.bottom, 20)

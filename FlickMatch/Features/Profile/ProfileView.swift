@@ -2,13 +2,25 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var coordinator: AppCoordinator
+    @EnvironmentObject var ratingStore: RatingStore
+    @EnvironmentObject var auth: AuthService
     @State private var selectedTab: ProfileTab = .movies
 
     enum ProfileTab { case movies, series }
 
-    // Mock top lists — will come from Firestore
-    private let topMovies: [MockTopItem] = MockTopItem.movieSamples
-    private let topSeries: [MockTopItem] = MockTopItem.seriesSamples
+    private var topMovies: [StoredRating] {
+        ratingStore.fetchAll(contentType: .movie)
+            .filter { $0.score > 0 }
+            .sorted { $0.score > $1.score }
+            .prefix(10).map { $0 }
+    }
+
+    private var topSeries: [StoredRating] {
+        ratingStore.fetchAll(contentType: .series)
+            .filter { $0.score > 0 }
+            .sorted { $0.score > $1.score }
+            .prefix(10).map { $0 }
+    }
 
     var body: some View {
         ZStack {
@@ -31,20 +43,35 @@ struct ProfileView: View {
                         }
 
                         VStack(spacing: 2) {
-                            Text("أنت")
+                            Text(auth.displayName ?? "أنت")
                                 .font(AppTheme.arabic(20, weight: .bold))
                                 .foregroundColor(AppTheme.textPrimary)
-                            Text("@moviefan")
-                                .font(AppTheme.arabic(13))
-                                .foregroundColor(AppTheme.textDim)
+                            if let uid = auth.userId {
+                                Text("@\(String(uid.prefix(8)))")
+                                    .font(AppTheme.arabic(13))
+                                    .foregroundColor(AppTheme.textDim)
+                            }
                         }
 
-                        // Stats
+                        // Stats from real data
                         HStack(spacing: 30) {
-                            ProfileStat(value: "14", label: "أفلام")
-                            ProfileStat(value: "8",  label: "مسلسلات")
-                            ProfileStat(value: "12", label: "متابِع")
-                            ProfileStat(value: "8",  label: "متابَع")
+                            ProfileStat(value: "\(ratingStore.ratedCount(contentType: .movie))", label: "أفلام")
+                            ProfileStat(value: "\(ratingStore.ratedCount(contentType: .series))", label: "مسلسلات")
+                        }
+
+                        // Sign out
+                        Button {
+                            auth.signOut()
+                        } label: {
+                            Text("تسجيل خروج")
+                                .font(AppTheme.arabic(12))
+                                .foregroundColor(AppTheme.textDim)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 6)
+                                .overlay(
+                                    Capsule().stroke(Color(hex: "#333333"), lineWidth: 1)
+                                )
+                                .clipShape(Capsule())
                         }
                     }
                     .padding(.top, 30)
@@ -58,20 +85,36 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
 
                     // Top list
-                    LazyVStack(spacing: 0) {
-                        let items = selectedTab == .movies ? topMovies : topSeries
-                        ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
-                            TopListRow(item: item, rank: idx + 1)
+                    let items = selectedTab == .movies ? topMovies : topSeries
+                    if items.isEmpty {
+                        VStack(spacing: 12) {
+                            Text("🎬")
+                                .font(.system(size: 48))
+                            Text("ما عندك تقييمات بعد")
+                                .font(AppTheme.arabic(15))
+                                .foregroundColor(AppTheme.textDim)
+                            Text("ابدأ بتقييم أفلام من الرئيسية")
+                                .font(AppTheme.arabic(13))
+                                .foregroundColor(AppTheme.textDim)
+                        }
+                        .padding(.top, 40)
+                    } else {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(items.enumerated()), id: \.element.contentId) { idx, item in
+                                NavigationLink(value: item.toAnyMedia()) {
+                                    TopListRow(rating: item, rank: idx + 1)
+                                }
                                 .padding(.horizontal, 20)
-                            if idx < items.count - 1 {
-                                Divider()
-                                    .background(Color(hex: "#151520"))
-                                    .padding(.horizontal, 20)
+                                if idx < items.count - 1 {
+                                    Divider()
+                                        .background(Color(hex: "#151520"))
+                                        .padding(.horizontal, 20)
+                                }
                             }
                         }
+                        .padding(.top, 8)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.top, 8)
-                    .padding(.bottom, 20)
                 }
             }
         }
@@ -118,9 +161,9 @@ struct ProfileTabButton: View {
     }
 }
 
-// MARK: - Top List Row
+// MARK: - Top List Row (real data)
 struct TopListRow: View {
-    let item: MockTopItem
+    let rating: StoredRating
     let rank: Int
 
     var body: some View {
@@ -131,24 +174,28 @@ struct TopListRow: View {
                 .frame(width: 24)
 
             // Poster thumbnail
-            ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(AppTheme.surface)
-                    .frame(width: 44, height: 64)
-                Text(item.emoji)
-                    .font(.system(size: 24))
+            AsyncImage(url: posterURL) { phase in
+                switch phase {
+                case .success(let img): img.resizable().scaledToFill()
+                default:
+                    Rectangle().fill(AppTheme.surface)
+                        .overlay(Image(systemName: "film").foregroundColor(AppTheme.textDim).font(.system(size: 16)))
+                }
             }
+            .frame(width: 44, height: 64)
+            .cornerRadius(6)
+            .clipped()
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
+                Text(rating.title)
                     .font(AppTheme.arabic(13, weight: .semibold))
                     .foregroundColor(AppTheme.textPrimary)
                     .lineLimit(1)
                 HStack(spacing: 6) {
-                    Text(item.year)
+                    Text(rating.year)
                         .font(.system(size: 11))
                         .foregroundColor(AppTheme.textDim)
-                    Text(item.genre)
+                    Text(rating.contentType == "movie" ? "فيلم" : "مسلسل")
                         .font(AppTheme.arabic(10))
                         .foregroundColor(AppTheme.textDim)
                 }
@@ -156,36 +203,15 @@ struct TopListRow: View {
 
             Spacer()
 
-            Text("\(item.rating) ⭐")
+            Text("\(rating.score) ⭐")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(AppTheme.gold)
         }
         .padding(.vertical, 10)
     }
-}
 
-// MARK: - Mock Data
-struct MockTopItem: Identifiable {
-    let id: Int
-    let title: String
-    let emoji: String
-    let year: String
-    let genre: String
-    let rating: Int
-
-    static let movieSamples: [MockTopItem] = [
-        MockTopItem(id: 1, title: "The Shawshank Redemption", emoji: "🏛", year: "1994", genre: "دراما", rating: 10),
-        MockTopItem(id: 2, title: "The Godfather", emoji: "🤌", year: "1972", genre: "جريمة", rating: 10),
-        MockTopItem(id: 3, title: "The Dark Knight", emoji: "🦇", year: "2008", genre: "أكشن", rating: 9),
-        MockTopItem(id: 4, title: "Schindler's List", emoji: "📜", year: "1993", genre: "تاريخي", rating: 9),
-        MockTopItem(id: 5, title: "Pulp Fiction", emoji: "💼", year: "1994", genre: "جريمة", rating: 9),
-    ]
-
-    static let seriesSamples: [MockTopItem] = [
-        MockTopItem(id: 10, title: "Breaking Bad", emoji: "⚗️", year: "2008", genre: "جريمة", rating: 10),
-        MockTopItem(id: 11, title: "Game of Thrones", emoji: "👑", year: "2011", genre: "فانتازيا", rating: 9),
-        MockTopItem(id: 12, title: "Chernobyl", emoji: "☢️", year: "2019", genre: "دراما", rating: 9),
-        MockTopItem(id: 13, title: "Band of Brothers", emoji: "🪖", year: "2001", genre: "حرب", rating: 9),
-        MockTopItem(id: 14, title: "The Wire", emoji: "📡", year: "2002", genre: "جريمة", rating: 9),
-    ]
+    private var posterURL: URL? {
+        guard !rating.posterPath.isEmpty else { return nil }
+        return URL(string: "https://image.tmdb.org/t/p/w185\(rating.posterPath)")
+    }
 }

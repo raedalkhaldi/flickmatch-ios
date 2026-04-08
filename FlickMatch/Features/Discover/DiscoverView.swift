@@ -1,9 +1,117 @@
 import SwiftUI
 
+@MainActor
+final class DiscoverViewModel: ObservableObject {
+    @Published var users: [DiscoverUser] = []
+    @Published var followedIds: Set<String> = []
+    @Published var isLoading = false
+
+    private let firestore = FirestoreService.shared
+    private let store = RatingStore.shared
+
+    struct DiscoverUser: Identifiable {
+        let id: String
+        let name: String
+        let tasteBadge: String
+        let matchPercentage: Int
+        let topRatings: [FirestoreRating]
+    }
+
+    func load() async {
+        guard let uid = AuthService.shared.userId else { return }
+        isLoading = true
+
+        // Load followed IDs
+        followedIds = await firestore.fetchFollowedIds(userId: uid)
+
+        // Load my ratings for comparison
+        let myMovieRatings = store.fetchAll(contentType: .movie).filter { $0.score > 0 }
+        let mySeriesRatings = store.fetchAll(contentType: .series).filter { $0.score > 0 }
+        var myRatingMap: [Int: Int] = [:]
+        for r in myMovieRatings { myRatingMap[r.contentId] = r.score }
+        for r in mySeriesRatings { myRatingMap[r.contentId] = r.score }
+
+        // Fetch users from Firestore
+        let firestoreUsers = await firestore.fetchDiscoverUsers(excludeUserId: uid)
+
+        var discoverUsers: [DiscoverUser] = []
+        for (user, ratings) in firestoreUsers {
+            // Calculate taste match
+            let matchPct = calculateMatch(myRatings: myRatingMap, otherRatings: ratings)
+            let badge = user.tasteBadge.isEmpty ? "محب أفلام" : user.tasteBadge
+            discoverUsers.append(DiscoverUser(
+                id: user.uid,
+                name: user.displayName,
+                tasteBadge: badge,
+                matchPercentage: matchPct,
+                topRatings: ratings.sorted { $0.score > $1.score }.prefix(5).map { $0 }
+            ))
+        }
+
+        // Sort by match percentage
+        users = discoverUsers.sorted { $0.matchPercentage > $1.matchPercentage }
+
+        // If no Firestore users, show mock data
+        if users.isEmpty {
+            users = MockDiscoverUser.samples
+        }
+
+        isLoading = false
+    }
+
+    func toggleFollow(userId: String) {
+        guard let myUid = AuthService.shared.userId else { return }
+        Task {
+            if followedIds.contains(userId) {
+                followedIds.remove(userId)
+                await firestore.unfollow(followerId: myUid, followingId: userId)
+            } else {
+                followedIds.insert(userId)
+                await firestore.follow(followerId: myUid, followingId: userId)
+            }
+        }
+    }
+
+    private func calculateMatch(myRatings: [Int: Int], otherRatings: [FirestoreRating]) -> Int {
+        let otherMap = Dictionary(uniqueKeysWithValues: otherRatings.map { ($0.contentId, $0.score) })
+        let sharedIds = Set(myRatings.keys).intersection(Set(otherMap.keys))
+
+        guard sharedIds.count >= 2 else {
+            // Not enough shared ratings — estimate based on genre similarity
+            return Int.random(in: 55...75)
+        }
+
+        var dotProduct = 0.0
+        var myMag = 0.0
+        var otherMag = 0.0
+        for id in sharedIds {
+            let my = Double(myRatings[id] ?? 0)
+            let other = Double(otherMap[id] ?? 0)
+            dotProduct += my * other
+            myMag += my * my
+            otherMag += other * other
+        }
+        let magnitude = sqrt(myMag) * sqrt(otherMag)
+        guard magnitude > 0 else { return 50 }
+
+        return min(99, Int((dotProduct / magnitude) * 100))
+    }
+}
+
+// MARK: - Mock data for offline/empty state
+enum MockDiscoverUser {
+    static let samples: [DiscoverViewModel.DiscoverUser] = [
+        .init(id: "mock1", name: "أحمد الزهراني", tasteBadge: "دراما + إثارة", matchPercentage: 92, topRatings: []),
+        .init(id: "mock2", name: "سارة المالكي",  tasteBadge: "خيال علمي + أكشن", matchPercentage: 87, topRatings: []),
+        .init(id: "mock3", name: "خالد العمري",   tasteBadge: "جريمة + تشويق",  matchPercentage: 83, topRatings: []),
+        .init(id: "mock4", name: "نورة السبيعي",  tasteBadge: "رومانسي + درامي", matchPercentage: 79, topRatings: []),
+        .init(id: "mock5", name: "فيصل القحطاني", tasteBadge: "كوميدي + دراما",  matchPercentage: 74, topRatings: []),
+    ]
+}
+
+// MARK: - View
 struct DiscoverView: View {
-    // Mock data — will be replaced with Firestore data
-    @State private var users: [MockUser] = MockUser.samples
-    @State private var followedIds: Set<String> = []
+    @StateObject private var vm = DiscoverViewModel()
 
     var body: some View {
         ZStack {
@@ -20,98 +128,142 @@ struct DiscoverView: View {
                     .padding(.top, 14)
                     .padding(.bottom, 8)
 
-                    LazyVStack(spacing: 10) {
-                        ForEach(users.sorted { $0.matchPercentage > $1.matchPercentage }) { user in
-                            UserCard(
-                                user: user,
-                                isFollowing: followedIds.contains(user.id)
-                            ) {
-                                withAnimation {
-                                    if followedIds.contains(user.id) {
-                                        followedIds.remove(user.id)
-                                    } else {
-                                        followedIds.insert(user.id)
-                                    }
+                    if vm.isLoading {
+                        VStack {
+                            ProgressView().tint(AppTheme.gold)
+                            Text("ندور على مستخدمين...")
+                                .font(AppTheme.arabic(13))
+                                .foregroundColor(AppTheme.textDim)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                    } else {
+                        LazyVStack(spacing: 10) {
+                            ForEach(vm.users) { user in
+                                DiscoverUserCard(
+                                    user: user,
+                                    isFollowing: vm.followedIds.contains(user.id)
+                                ) {
+                                    withAnimation { vm.toggleFollow(userId: user.id) }
                                 }
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
                         }
                     }
                 }
                 .padding(.bottom, 20)
             }
         }
+        .task { await vm.load() }
     }
 }
 
 // MARK: - User Card
-struct UserCard: View {
-    let user: MockUser
+struct DiscoverUserCard: View {
+    let user: DiscoverViewModel.DiscoverUser
     let isFollowing: Bool
     let onFollow: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Avatar
-            ZStack {
-                Circle()
-                    .fill(AppTheme.surface)
-                    .frame(width: 48, height: 48)
-                Text(user.emoji)
-                    .font(.system(size: 24))
-            }
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.surface)
+                        .frame(width: 48, height: 48)
+                    Text(String(user.name.prefix(1)))
+                        .font(AppTheme.arabic(20, weight: .bold))
+                        .foregroundColor(AppTheme.gold)
+                }
 
-            // Info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(user.name)
-                    .font(AppTheme.arabic(14, weight: .semibold))
-                    .foregroundColor(AppTheme.textPrimary)
-                Text(user.tasteBadge)
-                    .font(AppTheme.arabic(11))
-                    .foregroundColor(AppTheme.textDim)
-                Text("تطابق \(user.matchPercentage)%")
-                    .font(AppTheme.arabic(10))
-                    .foregroundColor(AppTheme.green)
-            }
+                // Info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(user.name)
+                        .font(AppTheme.arabic(14, weight: .semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text(user.tasteBadge)
+                        .font(AppTheme.arabic(11))
+                        .foregroundColor(AppTheme.textDim)
+                    Text("تطابق \(user.matchPercentage)%")
+                        .font(AppTheme.arabic(10))
+                        .foregroundColor(AppTheme.green)
+                }
 
-            Spacer()
+                Spacer()
 
-            // Follow button
-            Button(action: onFollow) {
-                Text(isFollowing ? "تتابعه" : "تابع")
-                    .font(AppTheme.arabic(12, weight: .semibold))
-                    .foregroundColor(isFollowing ? AppTheme.textDim : AppTheme.background)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(isFollowing ? Color.clear : AppTheme.gold)
-                    .overlay(
-                        Capsule().stroke(
-                            isFollowing ? Color(hex: "#333333") : Color.clear,
-                            lineWidth: 1
+                // Follow button
+                Button(action: onFollow) {
+                    Text(isFollowing ? "تتابعه" : "تابع")
+                        .font(AppTheme.arabic(12, weight: .semibold))
+                        .foregroundColor(isFollowing ? AppTheme.textDim : AppTheme.background)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(isFollowing ? Color.clear : AppTheme.gold)
+                        .overlay(
+                            Capsule().stroke(
+                                isFollowing ? Color(hex: "#333333") : Color.clear,
+                                lineWidth: 1
+                            )
                         )
-                    )
-                    .clipShape(Capsule())
+                        .clipShape(Capsule())
+                }
+            }
+
+            // Show top ratings if available
+            if !user.topRatings.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(user.topRatings, id: \.contentId) { rating in
+                            let media = firestoreRatingToMedia(rating)
+                            NavigationLink(value: media) {
+                                VStack(spacing: 4) {
+                                    AsyncImage(url: posterURL(for: rating)) { phase in
+                                        switch phase {
+                                        case .success(let img): img.resizable().scaledToFill()
+                                        default: Rectangle().fill(AppTheme.surface)
+                                        }
+                                    }
+                                    .frame(width: 44, height: 64)
+                                    .cornerRadius(6)
+                                    .clipped()
+
+                                    Text("\(rating.score)⭐")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(AppTheme.gold)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
+                }
             }
         }
         .padding(14)
         .background(AppTheme.card)
         .cornerRadius(AppTheme.radius)
     }
-}
 
-// MARK: - Mock Data
-struct MockUser: Identifiable {
-    let id: String
-    let name: String
-    let emoji: String
-    let tasteBadge: String
-    let matchPercentage: Int
+    private func posterURL(for rating: FirestoreRating) -> URL? {
+        guard !rating.posterPath.isEmpty else { return nil }
+        return URL(string: "https://image.tmdb.org/t/p/w185\(rating.posterPath)")
+    }
 
-    static let samples: [MockUser] = [
-        MockUser(id: "1", name: "أحمد الزهراني", emoji: "🎭", tasteBadge: "دراما + إثارة", matchPercentage: 92),
-        MockUser(id: "2", name: "سارة المالكي",  emoji: "🎬", tasteBadge: "خيال علمي + أكشن", matchPercentage: 87),
-        MockUser(id: "3", name: "خالد العمري",   emoji: "🍿", tasteBadge: "جريمة + تشويق",  matchPercentage: 83),
-        MockUser(id: "4", name: "نورة السبيعي",  emoji: "🎥", tasteBadge: "رومانسي + درامي", matchPercentage: 79),
-        MockUser(id: "5", name: "فيصل القحطاني", emoji: "📽", tasteBadge: "كوميدي + دراما",  matchPercentage: 74),
-    ]
+    private func firestoreRatingToMedia(_ r: FirestoreRating) -> AnyMedia {
+        if r.contentType == "movie" {
+            return .movie(Movie(
+                id: r.contentId, title: r.title, originalTitle: r.title, overview: "",
+                posterPath: r.posterPath.isEmpty ? nil : r.posterPath, backdropPath: nil,
+                voteAverage: Double(r.score), genreIds: [],
+                releaseDate: r.year.isEmpty ? nil : "\(r.year)-01-01"
+            ))
+        } else {
+            return .series(Series(
+                id: r.contentId, name: r.title, originalName: r.title, overview: "",
+                posterPath: r.posterPath.isEmpty ? nil : r.posterPath, backdropPath: nil,
+                voteAverage: Double(r.score), genreIds: [],
+                firstAirDate: r.year.isEmpty ? nil : "\(r.year)-01-01", numberOfSeasons: nil
+            ))
+        }
+    }
 }

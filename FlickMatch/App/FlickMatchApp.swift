@@ -5,6 +5,7 @@ struct FlickMatchApp: App {
     @StateObject private var coordinator = AppCoordinator()
     @StateObject private var ratingStore = RatingStore.shared
     @StateObject private var authService = AuthService.shared
+    @StateObject private var notificationService = NotificationService.shared
 
     init() {
         FirebaseConfig.configure()
@@ -16,7 +17,11 @@ struct FlickMatchApp: App {
                 .environmentObject(coordinator)
                 .environmentObject(ratingStore)
                 .environmentObject(authService)
+                .environmentObject(notificationService)
                 .preferredColorScheme(.dark)
+                .task {
+                    await notificationService.requestPermission()
+                }
         }
     }
 }
