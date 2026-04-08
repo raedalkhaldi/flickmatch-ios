@@ -103,7 +103,7 @@ final class RatingViewModel: ObservableObject {
         store.save(contentId: contentId, contentType: contentType,
                    score: score ?? 0, title: title, posterPath: poster, year: year)
         // Sync to Firestore
-        if let uid = AuthService.shared.currentUser?.uid {
+        if let uid = AuthService.shared.userId {
             Task {
                 await firestore.saveRating(
                     userId: uid, contentId: contentId,
