@@ -64,8 +64,8 @@ struct MediaDetailView: View {
                             // Arabic title
                             if !displayMedia.localizedTitle.isEmpty {
                                 Text(displayMedia.localizedTitle)
-                                    .font(AppTheme.arabic(15, weight: .semibold))
-                                    .foregroundColor(AppTheme.textDim)
+                                    .font(AppTheme.arabic(14, weight: .semibold))
+                                    .foregroundColor(AppTheme.gold.opacity(0.8))
                                     .lineLimit(2)
                             }
 
@@ -110,14 +110,14 @@ struct MediaDetailView: View {
                             // Your rating
                             if let score = ratingStore.score(contentId: media.id, contentType: media.contentType) {
                                 HStack(spacing: 4) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(AppTheme.gold)
                                     Text("تقييمك:")
                                         .font(AppTheme.arabic(12))
                                         .foregroundColor(AppTheme.textDim)
                                     Text("\(score)/10")
                                         .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(AppTheme.gold)
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 11))
                                         .foregroundColor(AppTheme.gold)
                                 }
                                 .padding(.top, 4)
@@ -136,32 +136,62 @@ struct MediaDetailView: View {
 
                     // Overview
                     if !displayMedia.overview.isEmpty {
-                        VStack(alignment: .trailing, spacing: 10) {
-                            Text("القصة")
-                                .font(AppTheme.arabic(16, weight: .bold))
-                                .foregroundColor(AppTheme.textPrimary)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-
-                            Text(displayMedia.overview)
-                                .font(AppTheme.arabic(14))
-                                .foregroundColor(AppTheme.textDim)
-                                .lineSpacing(8)
-                                .multilineTextAlignment(.trailing)
-                                .lineLimit(showFullOverview ? nil : 4)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-
-                            if displayMedia.overview.count > 150 {
-                                Button {
-                                    withAnimation { showFullOverview.toggle() }
-                                } label: {
-                                    Text(showFullOverview ? "عرض أقل ←" : "عرض المزيد →")
-                                        .font(AppTheme.arabic(13, weight: .semibold))
+                        VStack(spacing: 0) {
+                            // Section header
+                            HStack {
+                                Spacer()
+                                HStack(spacing: 6) {
+                                    Text("القصة")
+                                        .font(AppTheme.arabic(15, weight: .bold))
+                                        .foregroundColor(AppTheme.textPrimary)
+                                    Image(systemName: "text.alignright")
+                                        .font(.system(size: 12))
                                         .foregroundColor(AppTheme.gold)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .trailing)
                             }
+                            .padding(.bottom, 12)
+
+                            // Story text in card
+                            VStack(alignment: .trailing, spacing: 12) {
+                                Text(displayMedia.overview)
+                                    .font(AppTheme.arabic(14))
+                                    .foregroundColor(AppTheme.textDim)
+                                    .lineSpacing(7)
+                                    .multilineTextAlignment(.trailing)
+                                    .lineLimit(showFullOverview ? nil : 5)
+                                    .fixedSize(horizontal: false, vertical: showFullOverview)
+
+                                if displayMedia.overview.count > 120 {
+                                    HStack {
+                                        Spacer()
+                                        Button {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                showFullOverview.toggle()
+                                            }
+                                        } label: {
+                                            HStack(spacing: 4) {
+                                                Text(showFullOverview ? "أقل" : "المزيد")
+                                                    .font(AppTheme.arabic(12, weight: .semibold))
+                                                Image(systemName: showFullOverview ? "chevron.up" : "chevron.down")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                            }
+                                            .foregroundColor(AppTheme.gold)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 6)
+                                            .background(AppTheme.gold.opacity(0.08))
+                                            .cornerRadius(12)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(16)
+                            .background(AppTheme.card)
+                            .cornerRadius(AppTheme.radius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AppTheme.radius)
+                                    .stroke(AppTheme.surface, lineWidth: 1)
+                            )
                         }
-                        .environment(\.layoutDirection, .rightToLeft)
                         .padding(.horizontal, 20)
                         .padding(.top, -30)
                         .padding(.bottom, 30)

@@ -54,9 +54,15 @@ enum TMDbEndpoint: Endpoint {
     }
 
     private var queryItems: [URLQueryItem] {
-        var items: [URLQueryItem] = [
-            URLQueryItem(name: "language", value: "ar-SA")
-        ]
+        var items: [URLQueryItem] = []
+        // Videos: don't filter by language (most trailers are English)
+        // Other endpoints: use Arabic
+        switch self {
+        case .movieTrailers, .seriesTrailers:
+            break // no language filter for videos
+        default:
+            items.append(URLQueryItem(name: "language", value: "ar-SA"))
+        }
         switch self {
         case .topMovies(let page), .topSeries(let page):
             items.append(URLQueryItem(name: "page", value: "\(page)"))

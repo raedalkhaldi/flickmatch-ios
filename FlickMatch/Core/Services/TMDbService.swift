@@ -19,8 +19,7 @@ final class TMDbService {
 
     func fetchMovieTrailer(id: Int) async throws -> VideoResult? {
         let response: VideoResponse = try await client.fetch(TMDbEndpoint.movieTrailers(id: id))
-        return response.results.first(where: { $0.isYouTubeTrailer })
-            ?? response.results.first(where: { $0.site == "YouTube" })
+        return bestVideo(from: response.results)
     }
 
     // MARK: - Series
@@ -35,8 +34,17 @@ final class TMDbService {
 
     func fetchSeriesTrailer(id: Int) async throws -> VideoResult? {
         let response: VideoResponse = try await client.fetch(TMDbEndpoint.seriesTrailers(id: id))
-        return response.results.first(where: { $0.isYouTubeTrailer })
-            ?? response.results.first(where: { $0.site == "YouTube" })
+        return bestVideo(from: response.results)
+    }
+
+    /// Pick the best video: official trailer > trailer > teaser > clip > any YouTube
+    private func bestVideo(from results: [VideoResult]) -> VideoResult? {
+        let yt = results.filter { $0.site == "YouTube" }
+        return yt.first(where: { $0.type == "Trailer" && $0.official })
+            ?? yt.first(where: { $0.type == "Trailer" })
+            ?? yt.first(where: { $0.type == "Teaser" })
+            ?? yt.first(where: { $0.type == "Clip" })
+            ?? yt.first
     }
 
     // MARK: - Genres
