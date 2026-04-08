@@ -50,6 +50,17 @@ final class TMDbService {
         return response.genres
     }
 
+    // MARK: - Search
+    func searchMovies(query: String) async throws -> [Movie] {
+        let response: MovieResponse = try await client.fetch(TMDbEndpoint.searchMovies(query: query))
+        return response.results
+    }
+
+    func searchSeries(query: String) async throws -> [Series] {
+        let response: SeriesResponse = try await client.fetch(TMDbEndpoint.searchSeries(query: query))
+        return response.results
+    }
+
     // MARK: - Rating Rounds
     // Returns 10 items per round (page-based)
     func fetchRatingRound(contentType: ContentItemType, round: Int) async throws -> [AnyMedia] {

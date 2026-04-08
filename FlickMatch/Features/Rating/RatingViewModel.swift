@@ -24,6 +24,7 @@ final class RatingViewModel: ObservableObject {
 
     let contentType: ContentItemType
     private let tmdb = TMDbService.shared
+    private let store = RatingStore.shared
     private let maxRounds = 3
 
     var ratedCount: Int {
@@ -93,6 +94,16 @@ final class RatingViewModel: ObservableObject {
                 score: score
             )
         }
+        // Persist locally
+        let media = mediaItems.first { $0.id == contentId }
+        store.save(
+            contentId: contentId,
+            contentType: contentType,
+            score: score ?? 0,
+            title: media?.title ?? "",
+            posterPath: media?.posterPath ?? "",
+            year: media?.year ?? ""
+        )
     }
 
     func setNotSeen(contentId: Int, notSeen: Bool) {
@@ -106,8 +117,19 @@ final class RatingViewModel: ObservableObject {
                     score: nil
                 )
             }
+            // Persist as "not seen" (score = 0)
+            let media = mediaItems.first { $0.id == contentId }
+            store.save(
+                contentId: contentId,
+                contentType: contentType,
+                score: 0,
+                title: media?.title ?? "",
+                posterPath: media?.posterPath ?? "",
+                year: media?.year ?? ""
+            )
         } else {
             pendingRatings.removeValue(forKey: contentId)
+            store.delete(contentId: contentId, contentType: contentType)
         }
     }
 
@@ -116,7 +138,23 @@ final class RatingViewModel: ObservableObject {
         do {
             let items = try await tmdb.fetchRatingRound(contentType: contentType, round: round)
             mediaItems = items
-            phase = .rating
+            // Restore any previously saved ratings
+            for item in items {
+                if let saved = store.fetch(contentId: item.id, contentType: contentType) {
+                    pendingRatings[item.id] = PendingRating(
+                        id: item.id,
+                        contentType: contentType,
+                        score: saved.score > 0 ? saved.score : nil
+                    )
+                }
+            }
+            // If already rated enough, skip to recommendations
+            if store.ratedCount(contentType: contentType) >= 5 && round == 1 {
+                await generateMockRecommendations()
+                phase = .recommendations
+            } else {
+                phase = .rating
+            }
         } catch {
             errorMessage = error.localizedDescription
             phase = .welcome

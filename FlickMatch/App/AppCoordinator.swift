@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab {
-    case home, discover, profile
+    case home, discover, search, notifications, profile
 }
 
 enum ContentType: String, CaseIterable {
@@ -26,4 +26,5 @@ enum ContentType: String, CaseIterable {
 final class AppCoordinator: ObservableObject {
     @Published var selectedTab: AppTab = .home
     @Published var selectedContentType: ContentType = .movies
+    @Published var unreadNotifications: Int = 2
 }

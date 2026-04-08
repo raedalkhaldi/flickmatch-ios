@@ -7,7 +7,6 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             AppTheme.background.ignoresSafeArea()
 
-            // Top bar + content
             VStack(spacing: 0) {
                 if coordinator.selectedTab == .home {
                     TopBar()
@@ -15,7 +14,6 @@ struct ContentView: View {
                 tabContent
             }
 
-            // Bottom navigation
             BottomNav()
         }
     }
@@ -23,9 +21,11 @@ struct ContentView: View {
     @ViewBuilder
     private var tabContent: some View {
         switch coordinator.selectedTab {
-        case .home:     HomeView()
-        case .discover: DiscoverView()
-        case .profile:  ProfileView()
+        case .home:          HomeView()
+        case .discover:      DiscoverView()
+        case .search:        SearchView()
+        case .notifications: NotificationsView()
+        case .profile:       ProfileView()
         }
     }
 }
@@ -44,19 +44,23 @@ struct TopBar: View {
                 Spacer()
 
                 HStack(spacing: 16) {
-                    Button {
-                        // TODO: Search
-                    } label: {
+                    Button { coordinator.selectedTab = .search } label: {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(AppTheme.textDim)
                             .font(.system(size: 19))
                     }
-                    Button {
-                        // TODO: Notifications
-                    } label: {
-                        Image(systemName: "bell")
-                            .foregroundColor(AppTheme.textDim)
-                            .font(.system(size: 19))
+                    Button { coordinator.selectedTab = .notifications } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "bell")
+                                .foregroundColor(AppTheme.textDim)
+                                .font(.system(size: 19))
+                            if coordinator.unreadNotifications > 0 {
+                                Circle()
+                                    .fill(AppTheme.accent)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 4, y: -2)
+                            }
+                        }
                     }
                 }
             }
@@ -90,10 +94,7 @@ struct TopBar: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(
-            AppTheme.background.opacity(0.92)
-                .background(.ultraThinMaterial)
-        )
+        .background(AppTheme.background.opacity(0.92).background(.ultraThinMaterial))
     }
 }
 
@@ -101,23 +102,43 @@ struct TopBar: View {
 struct BottomNav: View {
     @EnvironmentObject var coordinator: AppCoordinator
 
-    private let items: [(tab: AppTab, icon: String, label: String)] = [
-        (.home,     "house.fill",          "الرئيسية"),
-        (.discover, "person.2.fill",       "اكتشف"),
-        (.profile,  "person.crop.circle",  "حسابي"),
+    private struct NavItem {
+        let tab: AppTab
+        let icon: String
+        let activeIcon: String
+        let label: String
+    }
+
+    private let items: [NavItem] = [
+        NavItem(tab: .home,          icon: "house",               activeIcon: "house.fill",              label: "الرئيسية"),
+        NavItem(tab: .discover,      icon: "person.2",            activeIcon: "person.2.fill",           label: "اكتشف"),
+        NavItem(tab: .search,        icon: "magnifyingglass",     activeIcon: "magnifyingglass",         label: "بحث"),
+        NavItem(tab: .notifications, icon: "bell",                activeIcon: "bell.fill",               label: "إشعارات"),
+        NavItem(tab: .profile,       icon: "person.crop.circle",  activeIcon: "person.crop.circle.fill", label: "حسابي"),
     ]
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(items, id: \.tab.hashValue) { item in
+            ForEach(items, id: \.label) { item in
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         coordinator.selectedTab = item.tab
+                        if item.tab == .notifications {
+                            coordinator.unreadNotifications = 0
+                        }
                     }
                 } label: {
                     VStack(spacing: 3) {
-                        Image(systemName: item.icon)
-                            .font(.system(size: 21))
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: coordinator.selectedTab == item.tab ? item.activeIcon : item.icon)
+                                .font(.system(size: 20))
+                            if item.tab == .notifications && coordinator.unreadNotifications > 0 {
+                                Circle()
+                                    .fill(AppTheme.accent)
+                                    .frame(width: 7, height: 7)
+                                    .offset(x: 4, y: -2)
+                            }
+                        }
                         Text(item.label)
                             .font(AppTheme.arabic(9))
                     }
@@ -132,9 +153,7 @@ struct BottomNav: View {
                 .background(.ultraThinMaterial)
                 .ignoresSafeArea(edges: .bottom)
                 .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(Color(hex: "#1a1a24"))
-                        .frame(height: 1)
+                    Rectangle().fill(Color(hex: "#1a1a24")).frame(height: 1)
                 }
         )
     }

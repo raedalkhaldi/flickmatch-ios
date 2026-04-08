@@ -11,6 +11,7 @@ enum AppTheme {
     static let textDim        = Color(hex: "#7a7680")
     static let accent         = Color(hex: "#e84545")
     static let green          = Color(hex: "#4ecb71")
+    static let blue           = Color(hex: "#5b8def")
 
     // MARK: - Fonts
     static func arabic(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {

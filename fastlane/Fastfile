@@ -1,0 +1,51 @@
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Run tests"
+  lane :test do
+    run_tests(
+      scheme: "FlickMatch",
+      devices: ["iPhone 15"]
+    )
+  end
+
+  desc "Build & upload to TestFlight"
+  lane :beta do
+    # Sync certificates & profiles (code signing)
+    sync_code_signing(
+      type: "appstore",
+      app_identifier: "com.flickmatch.app",
+      readonly: true
+    )
+
+    # Bump build number using App Store Connect API
+    increment_build_number(
+      build_number: latest_testflight_build_number + 1
+    )
+
+    # Build the app
+    build_app(
+      scheme: "FlickMatch",
+      export_method: "app-store",
+      configuration: "Release"
+    )
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      api_key_path: "~/.private_keys/AuthKey_#{ENV['APP_STORE_CONNECT_KEY_ID']}.p8",
+      skip_waiting_for_build_processing: true
+    )
+
+    # Notify (optional: add Slack webhook in secrets)
+    # slack(message: "FlickMatch beta uploaded to TestFlight ✅")
+  end
+
+  desc "Release to App Store"
+  lane :release do
+    sync_code_signing(type: "appstore", readonly: true)
+    build_app(scheme: "FlickMatch", configuration: "Release")
+    upload_to_app_store(skip_screenshots: true, skip_metadata: false)
+  end
+
+end
