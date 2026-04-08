@@ -142,10 +142,11 @@ struct DiscoverView: View {
                             ForEach(vm.users) { user in
                                 DiscoverUserCard(
                                     user: user,
-                                    isFollowing: vm.followedIds.contains(user.id)
-                                ) {
-                                    withAnimation { vm.toggleFollow(userId: user.id) }
-                                }
+                                    isFollowing: vm.followedIds.contains(user.id),
+                                    onFollow: {
+                                        withAnimation { vm.toggleFollow(userId: user.id) }
+                                    }
+                                )
                                 .padding(.horizontal, 20)
                             }
                         }
@@ -158,43 +159,55 @@ struct DiscoverView: View {
     }
 }
 
-// MARK: - User Card
+// MARK: - User Card (tappable → opens profile sheet)
 struct DiscoverUserCard: View {
     let user: DiscoverViewModel.DiscoverUser
     let isFollowing: Bool
     let onFollow: () -> Void
+    @State private var showProfile = false
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                // Avatar
-                ZStack {
-                    Circle()
-                        .fill(AppTheme.surface)
-                        .frame(width: 48, height: 48)
-                    Text(String(user.name.prefix(1)))
-                        .font(AppTheme.arabic(20, weight: .bold))
-                        .foregroundColor(AppTheme.gold)
-                }
+            // Tappable user info area
+            Button { showProfile = true } label: {
+                HStack(spacing: 12) {
+                    // Avatar
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.surface)
+                            .frame(width: 48, height: 48)
+                        Text(String(user.name.prefix(1)))
+                            .font(AppTheme.arabic(20, weight: .bold))
+                            .foregroundColor(AppTheme.gold)
+                    }
 
-                // Info
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(user.name)
-                        .font(AppTheme.arabic(14, weight: .semibold))
-                        .foregroundColor(AppTheme.textPrimary)
-                    Text(user.tasteBadge)
-                        .font(AppTheme.arabic(11))
-                        .foregroundColor(AppTheme.textDim)
-                    Text("تطابق \(user.matchPercentage)%")
-                        .font(AppTheme.arabic(10))
-                        .foregroundColor(AppTheme.green)
-                }
+                    // Info
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(user.name)
+                                .font(AppTheme.arabic(14, weight: .semibold))
+                                .foregroundColor(AppTheme.textPrimary)
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppTheme.textDim)
+                        }
+                        Text(user.tasteBadge)
+                            .font(AppTheme.arabic(11))
+                            .foregroundColor(AppTheme.textDim)
+                        Text("تطابق \(user.matchPercentage)%")
+                            .font(AppTheme.arabic(10))
+                            .foregroundColor(AppTheme.green)
+                    }
 
+                    Spacer()
+                }
+            }
+
+            // Follow button (separate from tap area)
+            HStack {
                 Spacer()
-
-                // Follow button
                 Button(action: onFollow) {
-                    Text(isFollowing ? "تتابعه" : "تابع")
+                    Text(isFollowing ? "تتابعه ✓" : "+ تابع")
                         .font(AppTheme.arabic(12, weight: .semibold))
                         .foregroundColor(isFollowing ? AppTheme.textDim : AppTheme.background)
                         .padding(.horizontal, 16)
@@ -209,14 +222,14 @@ struct DiscoverUserCard: View {
                         .clipShape(Capsule())
                 }
             }
+            .padding(.top, 6)
 
-            // Show top ratings if available
+            // Top rated posters
             if !user.topRatings.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(user.topRatings, id: \.contentId) { rating in
-                            let media = firestoreRatingToMedia(rating)
-                            NavigationLink(value: media) {
+                            NavigationLink(value: ratingToMedia(rating)) {
                                 VStack(spacing: 4) {
                                     AsyncImage(url: posterURL(for: rating)) { phase in
                                         switch phase {
@@ -242,6 +255,14 @@ struct DiscoverUserCard: View {
         .padding(14)
         .background(AppTheme.card)
         .cornerRadius(AppTheme.radius)
+        .sheet(isPresented: $showProfile) {
+            UserProfileSheet(
+                userId: user.id,
+                userName: user.name,
+                tasteBadge: user.tasteBadge,
+                matchPercentage: user.matchPercentage
+            )
+        }
     }
 
     private func posterURL(for rating: FirestoreRating) -> URL? {
@@ -249,7 +270,7 @@ struct DiscoverUserCard: View {
         return URL(string: "https://image.tmdb.org/t/p/w185\(rating.posterPath)")
     }
 
-    private func firestoreRatingToMedia(_ r: FirestoreRating) -> AnyMedia {
+    private func ratingToMedia(_ r: FirestoreRating) -> AnyMedia {
         if r.contentType == "movie" {
             return .movie(Movie(
                 id: r.contentId, title: r.title, originalTitle: r.title, overview: "",

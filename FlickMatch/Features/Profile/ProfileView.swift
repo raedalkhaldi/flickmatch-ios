@@ -5,8 +5,16 @@ struct ProfileView: View {
     @EnvironmentObject var ratingStore: RatingStore
     @EnvironmentObject var auth: AuthService
     @State private var selectedTab: ProfileTab = .movies
+    @State private var followingUsers: [FollowingUser] = []
+    @State private var isLoadingFollowing = true
 
-    enum ProfileTab { case movies, series }
+    enum ProfileTab { case movies, series, following }
+
+    struct FollowingUser: Identifiable {
+        let id: String
+        let name: String
+        let tasteBadge: String
+    }
 
     private var topMovies: [StoredRating] {
         ratingStore.fetchAll(contentType: .movie)
@@ -53,10 +61,11 @@ struct ProfileView: View {
                             }
                         }
 
-                        // Stats from real data
-                        HStack(spacing: 30) {
+                        // Stats
+                        HStack(spacing: 24) {
                             ProfileStat(value: "\(ratingStore.ratedCount(contentType: .movie))", label: "أفلام")
                             ProfileStat(value: "\(ratingStore.ratedCount(contentType: .series))", label: "مسلسلات")
+                            ProfileStat(value: "\(followingUsers.count)", label: "متابَع")
                         }
 
                         // Sign out
@@ -79,46 +88,169 @@ struct ProfileView: View {
 
                     // Tabs
                     HStack(spacing: 0) {
-                        ProfileTabButton(title: "🎬 أعلى 10 أفلام",    tab: .movies,  selected: $selectedTab)
-                        ProfileTabButton(title: "📺 أعلى 10 مسلسلات", tab: .series, selected: $selectedTab)
+                        ProfileTabButton(title: "🎬 أفلام", tab: .movies, selected: $selectedTab)
+                        ProfileTabButton(title: "📺 مسلسلات", tab: .series, selected: $selectedTab)
+                        ProfileTabButton(title: "👥 متابَع", tab: .following, selected: $selectedTab)
                     }
                     .padding(.horizontal, 20)
 
-                    // Top list
-                    let items = selectedTab == .movies ? topMovies : topSeries
-                    if items.isEmpty {
-                        VStack(spacing: 12) {
-                            Text("🎬")
-                                .font(.system(size: 48))
-                            Text("ما عندك تقييمات بعد")
-                                .font(AppTheme.arabic(15))
-                                .foregroundColor(AppTheme.textDim)
-                            Text("ابدأ بتقييم أفلام من الرئيسية")
-                                .font(AppTheme.arabic(13))
-                                .foregroundColor(AppTheme.textDim)
-                        }
-                        .padding(.top, 40)
-                    } else {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(items.enumerated()), id: \.element.contentId) { idx, item in
-                                NavigationLink(value: item.toAnyMedia()) {
-                                    TopListRow(rating: item, rank: idx + 1)
-                                }
-                                .padding(.horizontal, 20)
-                                if idx < items.count - 1 {
-                                    Divider()
-                                        .background(Color(hex: "#151520"))
-                                        .padding(.horizontal, 20)
-                                }
-                            }
-                        }
-                        .padding(.top, 8)
-                        .padding(.bottom, 20)
+                    // Content
+                    switch selectedTab {
+                    case .movies, .series:
+                        topListContent
+                    case .following:
+                        followingContent
                     }
                 }
             }
         }
         .animation(.easeInOut(duration: 0.2), value: selectedTab)
+        .task { await loadFollowing() }
+    }
+
+    // MARK: - Top List
+    @ViewBuilder
+    private var topListContent: some View {
+        let items = selectedTab == .movies ? topMovies : topSeries
+        if items.isEmpty {
+            VStack(spacing: 12) {
+                Text("🎬")
+                    .font(.system(size: 48))
+                Text("ما عندك تقييمات بعد")
+                    .font(AppTheme.arabic(15))
+                    .foregroundColor(AppTheme.textDim)
+                Text("ابدأ بتقييم أفلام من الرئيسية")
+                    .font(AppTheme.arabic(13))
+                    .foregroundColor(AppTheme.textDim)
+            }
+            .padding(.top, 40)
+        } else {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.contentId) { idx, item in
+                    NavigationLink(value: item.toAnyMedia()) {
+                        TopListRow(rating: item, rank: idx + 1)
+                    }
+                    .padding(.horizontal, 20)
+                    if idx < items.count - 1 {
+                        Divider()
+                            .background(Color(hex: "#151520"))
+                            .padding(.horizontal, 20)
+                    }
+                }
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+    }
+
+    // MARK: - Following List
+    @ViewBuilder
+    private var followingContent: some View {
+        if isLoadingFollowing {
+            ProgressView().tint(AppTheme.gold)
+                .padding(.top, 40)
+        } else if followingUsers.isEmpty {
+            VStack(spacing: 12) {
+                Text("👥")
+                    .font(.system(size: 48))
+                Text("ما تتابع أحد بعد")
+                    .font(AppTheme.arabic(15))
+                    .foregroundColor(AppTheme.textDim)
+                Text("روح لـ اكتشف وتابع ناس بنفس ذوقك")
+                    .font(AppTheme.arabic(13))
+                    .foregroundColor(AppTheme.textDim)
+
+                Button {
+                    coordinator.selectedTab = .discover
+                } label: {
+                    Text("اكتشف مستخدمين")
+                        .font(AppTheme.arabic(13, weight: .semibold))
+                        .foregroundColor(AppTheme.background)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(AppTheme.gold)
+                        .cornerRadius(16)
+                }
+                .padding(.top, 4)
+            }
+            .padding(.top, 40)
+        } else {
+            LazyVStack(spacing: 8) {
+                ForEach(followingUsers) { user in
+                    FollowingRow(user: user)
+                        .padding(.horizontal, 20)
+                }
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+    }
+
+    private func loadFollowing() async {
+        guard let uid = auth.userId else {
+            isLoadingFollowing = false
+            return
+        }
+        let followedIds = await FirestoreService.shared.fetchFollowedIds(userId: uid)
+        var users: [FollowingUser] = []
+        for fid in followedIds {
+            if let profile = await FirestoreService.shared.fetchUserProfile(uid: fid) {
+                users.append(FollowingUser(
+                    id: fid,
+                    name: profile.displayName,
+                    tasteBadge: profile.tasteBadge.isEmpty ? "محب أفلام" : profile.tasteBadge
+                ))
+            }
+        }
+        followingUsers = users
+        isLoadingFollowing = false
+    }
+}
+
+// MARK: - Following Row (tappable → opens user profile sheet)
+struct FollowingRow: View {
+    let user: ProfileView.FollowingUser
+    @State private var showProfile = false
+
+    var body: some View {
+        Button { showProfile = true } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.surface)
+                        .frame(width: 44, height: 44)
+                    Text(String(user.name.prefix(1)))
+                        .font(AppTheme.arabic(18, weight: .bold))
+                        .foregroundColor(AppTheme.gold)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(user.name)
+                        .font(AppTheme.arabic(14, weight: .semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text(user.tasteBadge)
+                        .font(AppTheme.arabic(11))
+                        .foregroundColor(AppTheme.textDim)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppTheme.textDim)
+            }
+            .padding(12)
+            .background(AppTheme.card)
+            .cornerRadius(AppTheme.radius)
+        }
+        .sheet(isPresented: $showProfile) {
+            UserProfileSheet(
+                userId: user.id,
+                userName: user.name,
+                tasteBadge: user.tasteBadge,
+                matchPercentage: 0
+            )
+        }
     }
 }
 
@@ -149,7 +281,7 @@ struct ProfileTabButton: View {
         Button { selected = tab } label: {
             VStack(spacing: 6) {
                 Text(title)
-                    .font(AppTheme.arabic(13, weight: selected == tab ? .bold : .regular))
+                    .font(AppTheme.arabic(12, weight: selected == tab ? .bold : .regular))
                     .foregroundColor(selected == tab ? AppTheme.gold : AppTheme.textDim)
                 Rectangle()
                     .fill(selected == tab ? AppTheme.gold : Color.clear)
@@ -161,7 +293,7 @@ struct ProfileTabButton: View {
     }
 }
 
-// MARK: - Top List Row (real data)
+// MARK: - Top List Row
 struct TopListRow: View {
     let rating: StoredRating
     let rank: Int
@@ -173,7 +305,6 @@ struct TopListRow: View {
                 .foregroundColor(AppTheme.gold)
                 .frame(width: 24)
 
-            // Poster thumbnail
             AsyncImage(url: posterURL) { phase in
                 switch phase {
                 case .success(let img): img.resizable().scaledToFill()
