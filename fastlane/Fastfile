@@ -15,12 +15,45 @@ platform :ios do
       build_number: latest_testflight_build_number(api_key: api_key) + 1
     )
 
-    setup_ci
+    # Create temp keychain and import certificate
+    keychain_name = "fastlane_build"
+    keychain_password = "fastlane_build"
+
+    create_keychain(
+      name: keychain_name,
+      password: keychain_password,
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600
+    )
+
+    import_certificate(
+      certificate_path: ENV["CERTIFICATE_PATH"],
+      certificate_password: ENV["CERTIFICATE_PASSWORD"],
+      keychain_name: keychain_name,
+      keychain_password: keychain_password
+    )
+
+    install_provisioning_profile(path: ENV["PROFILE_PATH"])
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      team_id: ENV["TEAM_ID"],
+      code_sign_identity: "Apple Distribution",
+      profile_name: ENV["PROFILE_NAME"],
+      targets: ["FlickMatch"]
+    )
 
     build_app(
       scheme: "FlickMatch",
       export_method: "app-store",
-      configuration: "Release"
+      configuration: "Release",
+      export_options: {
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "com.flickmatch.app" => ENV["PROFILE_NAME"]
+        }
+      }
     )
 
     upload_to_testflight(
