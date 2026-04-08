@@ -27,11 +27,37 @@ jobs:
           echo "${{ secrets.CERTIFICATE_P12 }}" | base64 --decode > /tmp/cert.p12
           echo "${{ secrets.PROVISIONING_PROFILE }}" | base64 --decode > /tmp/profile.mobileprovision
 
+      - name: Install signing assets
+        env:
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          # Create and configure keychain
+          security create-keychain -p "build" build.keychain-db
+          security set-keychain-settings -lut 21600 build.keychain-db
+          security unlock-keychain -p "build" build.keychain-db
+
+          # Import certificate
+          security import /tmp/cert.p12 -k build.keychain-db -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "build" build.keychain-db
+
+          # Add to search list (keep existing + add ours)
+          security list-keychains -d user -s build.keychain-db $(security list-keychains -d user | tr -d '"')
+
+          # Verify cert is there
+          security find-identity -v build.keychain-db | head -5
+
+          # Install provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i /tmp/profile.mobileprovision))
+          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$PROFILE_UUID.mobileprovision
+          echo "Profile UUID: $PROFILE_UUID"
+
       - name: Get profile name
         id: profile
         run: |
-          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< $(/usr/bin/security cms -D -i /tmp/profile.mobileprovision))
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< $(security cms -D -i /tmp/profile.mobileprovision))
           echo "name=$PROFILE_NAME" >> $GITHUB_OUTPUT
+          echo "Profile Name: $PROFILE_NAME"
 
       - name: Generate Xcode Project
         run: |
@@ -44,9 +70,6 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           API_KEY_PATH: ~/.private_keys/AuthKey.p8
-          CERTIFICATE_PATH: /tmp/cert.p12
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-          PROFILE_PATH: /tmp/profile.mobileprovision
           PROFILE_NAME: ${{ steps.profile.outputs.name }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
         run: fastlane beta
