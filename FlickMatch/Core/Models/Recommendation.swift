@@ -37,6 +37,21 @@ enum AnyMedia: Identifiable, Hashable {
         }
     }
 
+    var originalTitle: String {
+        switch self {
+        case .movie(let m):  return m.originalTitle
+        case .series(let s): return s.originalName
+        }
+    }
+
+    /// Arabic title if different from original, otherwise empty
+    var localizedTitle: String {
+        let t = title
+        let o = originalTitle
+        // If TMDb returned Arabic, title != originalTitle
+        return t != o ? t : ""
+    }
+
     var posterPath: String? {
         switch self {
         case .movie(let m):  return m.posterPath

@@ -120,40 +120,121 @@ struct SearchView: View {
     }
 }
 
-// MARK: - Empty State
+// MARK: - Empty State with trending posters
 struct SearchEmptyState: View {
-    let suggestions = ["The Godfather", "Breaking Bad", "Inception", "Chernobyl"]
+    @State private var trendingMovies: [AnyMedia] = []
+    @State private var trendingSeries: [AnyMedia] = []
+    @State private var isLoading = true
 
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Text("🎬")
-                .font(.system(size: 52))
-            Text("دور على فيلم أو مسلسل")
-                .font(AppTheme.arabic(16, weight: .semibold))
-                .foregroundColor(AppTheme.textPrimary)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("اقتراحات:")
-                    .font(AppTheme.arabic(12))
-                    .foregroundColor(AppTheme.textDim)
-                    .padding(.horizontal, 20)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(suggestions, id: \.self) { s in
-                            Text(s)
-                                .font(AppTheme.english(13))
-                                .foregroundColor(AppTheme.gold)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(AppTheme.gold.opacity(0.08))
-                                .overlay(Capsule().stroke(AppTheme.gold.opacity(0.2), lineWidth: 1))
-                                .clipShape(Capsule())
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 16) {
+                // Movies section
+                if !trendingMovies.isEmpty {
+                    Text("🎬 أفلام رائجة")
+                        .font(AppTheme.arabic(16, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                        .padding(.horizontal, 20)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(trendingMovies) { media in
+                                NavigationLink(value: media) {
+                                    SuggestionPosterCard(media: media)
+                                }
+                            }
                         }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
+                }
+
+                // Series section
+                if !trendingSeries.isEmpty {
+                    Text("📺 مسلسلات رائجة")
+                        .font(AppTheme.arabic(16, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(trendingSeries) { media in
+                                NavigationLink(value: media) {
+                                    SuggestionPosterCard(media: media)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+
+                if isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView().tint(AppTheme.gold)
+                        Spacer()
+                    }
+                    .padding(.top, 60)
                 }
             }
-            Spacer()
+            .padding(.top, 14)
+            .padding(.bottom, 20)
+        }
+        .task { await loadTrending() }
+    }
+
+    private func loadTrending() async {
+        do {
+            async let movies = TMDbService.shared.fetchTopMovies(page: 1)
+            async let series = TMDbService.shared.fetchTopSeries(page: 1)
+            let (m, s) = try await (movies, series)
+            trendingMovies = m.prefix(10).map { .movie($0) }
+            trendingSeries = s.prefix(10).map { .series($0) }
+        } catch {}
+        isLoading = false
+    }
+}
+
+// MARK: - Suggestion Poster Card
+struct SuggestionPosterCard: View {
+    let media: AnyMedia
+
+    var body: some View {
+        VStack(spacing: 6) {
+            AsyncImage(url: media.posterURL) { phase in
+                switch phase {
+                case .success(let img):
+                    img.resizable().scaledToFill()
+                default:
+                    Rectangle().fill(AppTheme.surface)
+                        .overlay(Image(systemName: "film").foregroundColor(AppTheme.textDim))
+                }
+            }
+            .frame(width: 100, height: 150)
+            .cornerRadius(10)
+            .clipped()
+
+            VStack(spacing: 2) {
+                Text(media.originalTitle)
+                    .font(AppTheme.english(11, weight: .semibold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .lineLimit(1)
+                if !media.localizedTitle.isEmpty {
+                    Text(media.localizedTitle)
+                        .font(AppTheme.arabic(10))
+                        .foregroundColor(AppTheme.textDim)
+                        .lineLimit(1)
+                }
+                HStack(spacing: 3) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(Color(hex: "#f5c518"))
+                    Text(String(format: "%.1f", media.voteAverage))
+                        .font(.system(size: 10))
+                        .foregroundColor(AppTheme.textDim)
+                }
+            }
+            .frame(width: 100)
         }
     }
 }
@@ -177,10 +258,16 @@ struct SearchResultRow: View {
             .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(media.title)
+                Text(media.originalTitle)
                     .font(AppTheme.english(14, weight: .semibold))
                     .foregroundColor(AppTheme.textPrimary)
                     .lineLimit(1)
+                if !media.localizedTitle.isEmpty {
+                    Text(media.localizedTitle)
+                        .font(AppTheme.arabic(12))
+                        .foregroundColor(AppTheme.textDim)
+                        .lineLimit(1)
+                }
                 HStack(spacing: 8) {
                     Text(media.contentType == .movie ? "فيلم" : "مسلسل")
                         .font(AppTheme.arabic(11))

@@ -6,7 +6,7 @@ struct MediaDetailView: View {
 
     @State private var fullMedia: AnyMedia?
     @State private var genres: [Genre] = []
-    @State private var trailerURL: URL?
+    @State private var trailerKey: String?
     @State private var isLoadingTrailer = true
     @State private var showFullOverview = false
     @EnvironmentObject var ratingStore: RatingStore
@@ -56,10 +56,18 @@ struct MediaDetailView: View {
                         .offset(y: -60)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(displayMedia.title)
-                                .font(AppTheme.english(22, weight: .bold))
+                            // English title
+                            Text(displayMedia.originalTitle)
+                                .font(AppTheme.english(20, weight: .bold))
                                 .foregroundColor(AppTheme.textPrimary)
-                                .lineLimit(3)
+                                .lineLimit(2)
+                            // Arabic title
+                            if !displayMedia.localizedTitle.isEmpty {
+                                Text(displayMedia.localizedTitle)
+                                    .font(AppTheme.arabic(15, weight: .semibold))
+                                    .foregroundColor(AppTheme.textDim)
+                                    .lineLimit(2)
+                            }
 
                             HStack(spacing: 8) {
                                 HStack(spacing: 3) {
@@ -120,8 +128,8 @@ struct MediaDetailView: View {
                     .padding(.horizontal, 20)
 
                     // Trailer button
-                    if let url = trailerURL {
-                        TrailerPlayerSection(url: url, title: displayMedia.title)
+                    if let key = trailerKey {
+                        TrailerPlayerSection(videoKey: key, title: displayMedia.title)
                             .padding(.horizontal, 20)
                             .padding(.top, -40)
                     }
@@ -185,7 +193,7 @@ struct MediaDetailView: View {
             case .series(let s):
                 video = try await TMDbService.shared.fetchSeriesTrailer(id: s.id)
             }
-            trailerURL = video?.youtubeEmbedURL
+            trailerKey = video?.key
         } catch {}
         isLoadingTrailer = false
     }
@@ -216,14 +224,14 @@ struct MediaDetailView: View {
 
 // MARK: - Trailer Player Section
 struct TrailerPlayerSection: View {
-    let url: URL
+    let videoKey: String
     let title: String
     @State private var showPlayer = false
 
     var body: some View {
         VStack(spacing: 0) {
             if showPlayer {
-                YouTubePlayerView(url: url)
+                YouTubePlayerView(videoKey: videoKey)
                     .frame(height: 220)
                     .cornerRadius(AppTheme.radius)
             } else {

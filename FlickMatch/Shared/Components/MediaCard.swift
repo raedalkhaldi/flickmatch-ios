@@ -21,10 +21,17 @@ struct MediaCard: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     // English title
-                    Text(media.title)
+                    Text(media.originalTitle)
                         .font(AppTheme.english(15, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
                         .lineLimit(2)
+                    // Arabic title
+                    if !media.localizedTitle.isEmpty {
+                        Text(media.localizedTitle)
+                            .font(AppTheme.arabic(12))
+                            .foregroundColor(AppTheme.textDim)
+                            .lineLimit(1)
+                    }
 
                     // Meta row
                     HStack(spacing: 8) {

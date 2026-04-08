@@ -105,10 +105,16 @@ struct RecommendationCard: View {
                 )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(recommendation.media.title)
+                    Text(recommendation.media.originalTitle)
                         .font(AppTheme.english(15, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
                         .lineLimit(2)
+                    if !recommendation.media.localizedTitle.isEmpty {
+                        Text(recommendation.media.localizedTitle)
+                            .font(AppTheme.arabic(12))
+                            .foregroundColor(AppTheme.textDim)
+                            .lineLimit(1)
+                    }
 
                     HStack(spacing: 6) {
                         Text(String(format: "%.1f", recommendation.media.voteAverage))
