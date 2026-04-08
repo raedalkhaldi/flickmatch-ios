@@ -1,8 +1,5 @@
 import SwiftUI
-
-#if canImport(FirebaseCore)
 import FirebaseCore
-#endif
 
 @main
 struct FlickMatchApp: App {

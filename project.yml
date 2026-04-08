@@ -6,6 +6,11 @@ options:
   xcodeVersion: "14.2"
   createIntermediateGroups: true
 
+packages:
+  firebase-ios-sdk:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    exactVersion: "10.25.0"
+
 targets:
   FlickMatch:
     type: application
@@ -26,3 +31,10 @@ targets:
       INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen
       INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: firebase-ios-sdk
+        product: FirebaseAuth
+      - package: firebase-ios-sdk
+        product: FirebaseFirestore
+      - package: firebase-ios-sdk
+        product: FirebaseStorage
