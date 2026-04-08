@@ -27,6 +27,8 @@ platform :ios do
       scheme: "FlickMatch",
       export_method: "app-store",
       configuration: "Release",
+      destination: "generic/platform=iOS",
+      xcargs: "ONLY_ACTIVE_ARCH=NO",
       export_options: {
         signingStyle: "manual",
         provisioningProfiles: {
