@@ -81,14 +81,9 @@ struct MediaCard: View {
             VStack(spacing: 8) {
                 // Stars row
                 HStack(spacing: 8) {
-                    StarRatingView(rating: Binding(
-                        get: { hasNotSeen ? nil : rating },
-                        set: { newVal in
-                            rating = newVal
-                            if newVal != nil { hasNotSeen = false }
-                        }
-                    ))
+                    StarRatingView(rating: $rating)
                     .opacity(hasNotSeen ? 0.3 : 1.0)
+                    .allowsHitTesting(!hasNotSeen)
 
                     Spacer()
 

@@ -84,15 +84,13 @@ final class RatingViewModel: ObservableObject {
     }
 
     func setRating(contentId: Int, score: Int?) {
-        if pendingRatings[contentId] != nil {
-            pendingRatings[contentId]?.score = score
-        } else {
-            pendingRatings[contentId] = PendingRating(
-                id: contentId,
-                contentType: contentType,
-                score: score
-            )
-        }
+        // Always create or update the pending rating — this handles both
+        // fresh ratings and "not seen" → rated transitions
+        pendingRatings[contentId] = PendingRating(
+            id: contentId,
+            contentType: contentType,
+            score: score
+        )
         let media = mediaItems.first { $0.id == contentId }
         let title = media?.title ?? ""
         let poster = media?.posterPath ?? ""

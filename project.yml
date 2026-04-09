@@ -6,6 +6,11 @@ options:
   xcodeVersion: "16.2"
   createIntermediateGroups: true
 
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    version: "10.25.0"
+
 targets:
   FlickMatch:
     type: application
@@ -15,6 +20,13 @@ targets:
       - path: FlickMatch
         excludes:
           - Info.plist
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseMessaging
     settings:
       PRODUCT_NAME: FlickMatch
       PRODUCT_BUNDLE_IDENTIFIER: com.flickmatch.app
