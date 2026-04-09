@@ -27,6 +27,8 @@ targets:
         product: FirebaseFirestore
       - package: Firebase
         product: FirebaseMessaging
+    entitlements:
+      path: FlickMatch/FlickMatch.entitlements
     settings:
       PRODUCT_NAME: FlickMatch
       PRODUCT_BUNDLE_IDENTIFIER: com.flickmatch.app
