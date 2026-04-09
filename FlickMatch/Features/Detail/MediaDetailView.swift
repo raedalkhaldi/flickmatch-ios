@@ -207,7 +207,7 @@ struct MediaDetailView: View {
                     // Watch Providers (Saudi Arabia)
                     if let providers = watchProviders,
                        (providers.flatrate != nil || providers.rent != nil || providers.buy != nil) {
-                        WatchProvidersView(providers: providers)
+                        WatchProvidersView(providers: providers, mediaTitle: displayMedia.originalTitle)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 30)
                     }
