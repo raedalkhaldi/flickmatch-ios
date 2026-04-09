@@ -76,4 +76,6 @@ jobs:
           API_KEY_PATH: ~/.private_keys/AuthKey.p8
           PROFILE_NAME: ${{ steps.profile.outputs.name }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 6
         run: fastlane beta
