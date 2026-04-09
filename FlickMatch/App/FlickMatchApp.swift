@@ -32,10 +32,6 @@ struct RootView: View {
     @EnvironmentObject var auth: AuthService
 
     var body: some View {
-        if auth.isAuthenticated {
-            ContentView()
-        } else {
-            AuthView()
-        }
+        ContentView()
     }
 }

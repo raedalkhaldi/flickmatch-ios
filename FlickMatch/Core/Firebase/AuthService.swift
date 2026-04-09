@@ -35,7 +35,20 @@ final class AuthService: ObservableObject {
             req.displayName = displayName
             try await req.commitChanges()
             await FirestoreService.shared.createUserProfile(uid: result.user.uid, displayName: displayName, email: email)
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            let nsError = error as NSError
+            if nsError.domain == "FIRAuthErrorDomain" {
+                switch nsError.code {
+                case 17999: errorMessage = "خطأ في الإعدادات — تأكد من تفعيل تسجيل الدخول بالبريد"
+                case 17007: errorMessage = "البريد مستخدم بحساب آخر"
+                case 17008: errorMessage = "البريد الإلكتروني غير صحيح"
+                case 17026: errorMessage = "كلمة المرور لازم تكون ٦ أحرف أو أكثر"
+                default: errorMessage = error.localizedDescription
+                }
+            } else {
+                errorMessage = error.localizedDescription
+            }
+        }
         #else
         isAuthenticated = true; userId = UUID().uuidString; self.displayName = displayName
         #endif
@@ -46,7 +59,21 @@ final class AuthService: ObservableObject {
         isLoading = true; errorMessage = nil
         #if canImport(FirebaseAuth)
         do { try await Auth.auth().signIn(withEmail: email, password: password) }
-        catch { errorMessage = error.localizedDescription }
+        catch {
+            let nsError = error as NSError
+            if nsError.domain == "FIRAuthErrorDomain" {
+                switch nsError.code {
+                case 17999: errorMessage = "خطأ في الإعدادات — تأكد من تفعيل تسجيل الدخول بالبريد"
+                case 17008: errorMessage = "البريد الإلكتروني غير صحيح"
+                case 17009: errorMessage = "كلمة المرور غير صحيحة"
+                case 17011: errorMessage = "لا يوجد حساب بهذا البريد"
+                case 17010: errorMessage = "تم تعطيل الحساب"
+                default: errorMessage = error.localizedDescription
+                }
+            } else {
+                errorMessage = error.localizedDescription
+            }
+        }
         #else
         isAuthenticated = true; userId = "offline"; self.displayName = email.components(separatedBy: "@").first
         #endif
