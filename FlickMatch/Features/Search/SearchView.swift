@@ -335,6 +335,8 @@ struct SearchResultRow: View {
                 }
             }
             Spacer()
+
+            WatchLaterIconButton(media: media)
         }
         .padding(12)
         .background(AppTheme.card)

@@ -70,6 +70,8 @@ struct RecommendationsView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
+
+            Spacer().frame(height: 80)
         }
     }
 }
@@ -81,7 +83,7 @@ struct RecommendationCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Match badge
+            // Match badge + watchlist
             HStack {
                 Label("تطابق \(recommendation.matchPercentage)% مع ذوقك", systemImage: "checkmark.circle.fill")
                     .font(AppTheme.arabic(11, weight: .medium))
@@ -91,6 +93,7 @@ struct RecommendationCard: View {
                     .background(AppTheme.green.opacity(0.08))
                     .cornerRadius(10)
                 Spacer()
+                WatchLaterIconButton(media: recommendation.media)
             }
             .padding(.horizontal, 14)
             .padding(.top, 14)

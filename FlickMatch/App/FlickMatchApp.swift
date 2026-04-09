@@ -4,6 +4,7 @@ import SwiftUI
 struct FlickMatchApp: App {
     @StateObject private var coordinator = AppCoordinator()
     @StateObject private var ratingStore = RatingStore.shared
+    @StateObject private var watchlistStore = WatchlistStore.shared
     @StateObject private var authService = AuthService.shared
     @StateObject private var notificationService = NotificationService.shared
 
@@ -16,6 +17,7 @@ struct FlickMatchApp: App {
             RootView()
                 .environmentObject(coordinator)
                 .environmentObject(ratingStore)
+                .environmentObject(watchlistStore)
                 .environmentObject(authService)
                 .environmentObject(notificationService)
                 .preferredColorScheme(.dark)

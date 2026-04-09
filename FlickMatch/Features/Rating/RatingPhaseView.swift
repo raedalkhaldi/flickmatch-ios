@@ -75,7 +75,8 @@ struct RatingPhaseView: View {
             }
             .disabled(!vm.canSubmit)
             .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 100) // Space for bottom nav bar
         }
     }
 }

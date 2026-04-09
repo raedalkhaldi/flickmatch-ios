@@ -10,6 +10,7 @@ struct MediaDetailView: View {
     @State private var isLoadingTrailer = true
     @State private var showFullOverview = false
     @EnvironmentObject var ratingStore: RatingStore
+    @EnvironmentObject var watchlistStore: WatchlistStore
 
     private var displayMedia: AnyMedia { fullMedia ?? media }
 
@@ -126,6 +127,11 @@ struct MediaDetailView: View {
                         .padding(.top, 8)
                     }
                     .padding(.horizontal, 20)
+
+                    // Watch Later button
+                    WatchLaterButton(media: displayMedia)
+                        .padding(.horizontal, 20)
+                        .padding(.top, -40)
 
                     // Trailer button
                     if let key = trailerKey {

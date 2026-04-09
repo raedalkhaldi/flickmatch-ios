@@ -3,12 +3,13 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var coordinator: AppCoordinator
     @EnvironmentObject var ratingStore: RatingStore
+    @EnvironmentObject var watchlistStore: WatchlistStore
     @EnvironmentObject var auth: AuthService
     @State private var selectedTab: ProfileTab = .movies
     @State private var followingUsers: [FollowingUser] = []
     @State private var isLoadingFollowing = true
 
-    enum ProfileTab { case movies, series, following }
+    enum ProfileTab { case movies, series, watchlist, following }
 
     struct FollowingUser: Identifiable {
         let id: String
@@ -90,6 +91,7 @@ struct ProfileView: View {
                     HStack(spacing: 0) {
                         ProfileTabButton(title: "🎬 أفلام", tab: .movies, selected: $selectedTab)
                         ProfileTabButton(title: "📺 مسلسلات", tab: .series, selected: $selectedTab)
+                        ProfileTabButton(title: "🔖 أشوفه", tab: .watchlist, selected: $selectedTab)
                         ProfileTabButton(title: "👥 متابَع", tab: .following, selected: $selectedTab)
                     }
                     .padding(.horizontal, 20)
@@ -98,6 +100,8 @@ struct ProfileView: View {
                     switch selectedTab {
                     case .movies, .series:
                         topListContent
+                    case .watchlist:
+                        watchlistContent
                     case .following:
                         followingContent
                     }
@@ -105,11 +109,8 @@ struct ProfileView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: selectedTab)
-        .task { await loadFollowing() }
-        .onChange(of: selectedTab) { newTab in
-            if newTab == .following {
-                Task { await loadFollowing() }
-            }
+        .onAppear {
+            Task { await loadFollowing() }
         }
     }
 
@@ -134,6 +135,42 @@ struct ProfileView: View {
                 ForEach(Array(items.enumerated()), id: \.element.contentId) { idx, item in
                     NavigationLink(value: item.toAnyMedia()) {
                         TopListRow(rating: item, rank: idx + 1)
+                    }
+                    .padding(.horizontal, 20)
+                    if idx < items.count - 1 {
+                        Divider()
+                            .background(Color(hex: "#151520"))
+                            .padding(.horizontal, 20)
+                    }
+                }
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+    }
+
+    // MARK: - Watchlist
+    @ViewBuilder
+    private var watchlistContent: some View {
+        let items = watchlistStore.fetchAll()
+        if items.isEmpty {
+            VStack(spacing: 12) {
+                Text("🔖")
+                    .font(.system(size: 48))
+                Text("ما عندك شي بالقائمة بعد")
+                    .font(AppTheme.arabic(15))
+                    .foregroundColor(AppTheme.textDim)
+                Text("اضغط \"أشوفه لاحقاً\" على أي فيلم أو مسلسل")
+                    .font(AppTheme.arabic(13))
+                    .foregroundColor(AppTheme.textDim)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 40)
+        } else {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.contentId) { idx, item in
+                    NavigationLink(value: item.toAnyMedia()) {
+                        WatchlistRow(item: item)
                     }
                     .padding(.horizontal, 20)
                     if idx < items.count - 1 {
@@ -349,5 +386,81 @@ struct TopListRow: View {
     private var posterURL: URL? {
         guard !rating.posterPath.isEmpty else { return nil }
         return URL(string: "https://image.tmdb.org/t/p/w185\(rating.posterPath)")
+    }
+}
+
+// MARK: - Watchlist Row
+struct WatchlistRow: View {
+    let item: WatchlistItem
+    @EnvironmentObject var watchlistStore: WatchlistStore
+
+    var body: some View {
+        HStack(spacing: 12) {
+            AsyncImage(url: posterURL) { phase in
+                switch phase {
+                case .success(let img): img.resizable().scaledToFill()
+                default:
+                    Rectangle().fill(AppTheme.surface)
+                        .overlay(Image(systemName: "film").foregroundColor(AppTheme.textDim).font(.system(size: 16)))
+                }
+            }
+            .frame(width: 44, height: 64)
+            .cornerRadius(6)
+            .clipped()
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(AppTheme.arabic(13, weight: .semibold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(item.year)
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textDim)
+                    Text(item.contentType == "movie" ? "فيلم" : "مسلسل")
+                        .font(AppTheme.arabic(10))
+                        .foregroundColor(AppTheme.textDim)
+                }
+            }
+
+            Spacer()
+
+            // Remove from watchlist
+            Button {
+                withAnimation { watchlistStore.remove(contentId: item.contentId) }
+            } label: {
+                Image(systemName: "bookmark.slash.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textDim)
+                    .frame(width: 32, height: 32)
+            }
+        }
+        .padding(.vertical, 10)
+    }
+
+    private var posterURL: URL? {
+        guard !item.posterPath.isEmpty else { return nil }
+        return URL(string: "https://image.tmdb.org/t/p/w185\(item.posterPath)")
+    }
+}
+
+// MARK: - WatchlistItem → AnyMedia
+extension WatchlistItem {
+    func toAnyMedia() -> AnyMedia {
+        if contentType == ContentItemType.movie.rawValue {
+            return .movie(Movie(
+                id: contentId, title: title, originalTitle: title, overview: "",
+                posterPath: posterPath.isEmpty ? nil : posterPath, backdropPath: nil,
+                voteAverage: 0, genreIds: [],
+                releaseDate: year.isEmpty ? nil : "\(year)-01-01"
+            ))
+        } else {
+            return .series(Series(
+                id: contentId, name: title, originalName: title, overview: "",
+                posterPath: posterPath.isEmpty ? nil : posterPath, backdropPath: nil,
+                voteAverage: 0, genreIds: [],
+                firstAirDate: year.isEmpty ? nil : "\(year)-01-01", numberOfSeasons: nil
+            ))
+        }
     }
 }
