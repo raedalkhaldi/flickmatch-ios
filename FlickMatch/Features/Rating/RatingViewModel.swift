@@ -36,7 +36,9 @@ final class RatingViewModel: ObservableObject {
         pendingRatings.count
     }
 
-    var canSubmit: Bool { ratedCount >= 5 }
+    var canSubmit: Bool {
+        ratedCount >= 5 || store.ratedCount(contentType: contentType) >= 5
+    }
 
     var progressValue: Double {
         Double(ratedCount) / 10.0
