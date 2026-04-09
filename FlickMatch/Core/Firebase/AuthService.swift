@@ -1,8 +1,5 @@
 import Foundation
 import AuthenticationServices
-#if canImport(FirebaseAuth)
-import FirebaseAuth
-#endif
 
 @MainActor
 final class AuthService: ObservableObject {
@@ -14,97 +11,68 @@ final class AuthService: ObservableObject {
     @Published var userId: String?
     @Published var displayName: String?
 
+    private let userIdKey = "flickmatch_apple_user_id"
+    private let displayNameKey = "flickmatch_apple_display_name"
+
     private init() {
-        #if canImport(FirebaseAuth)
-        Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            Task { @MainActor in
-                self?.isAuthenticated = user != nil
-                self?.userId = user?.uid
-                self?.displayName = user?.displayName
-            }
+        // Restore session from Keychain/UserDefaults
+        if let savedId = UserDefaults.standard.string(forKey: userIdKey) {
+            userId = savedId
+            displayName = UserDefaults.standard.string(forKey: displayNameKey)
+            isAuthenticated = true
         }
-        #endif
     }
 
-    func signUp(email: String, password: String, displayName: String) async {
+    func handleAppleSignIn(authorization: ASAuthorization) async {
         isLoading = true; errorMessage = nil
-        #if canImport(FirebaseAuth)
-        do {
-            let result = try await Auth.auth().createUser(withEmail: email, password: password)
-            let req = result.user.createProfileChangeRequest()
-            req.displayName = displayName
-            try await req.commitChanges()
-            await FirestoreService.shared.createUserProfile(uid: result.user.uid, displayName: displayName, email: email)
-        } catch {
-            let nsError = error as NSError
-            if nsError.domain == "FIRAuthErrorDomain" {
-                switch nsError.code {
-                case 17999: errorMessage = "خطأ في الإعدادات — تأكد من تفعيل تسجيل الدخول بالبريد"
-                case 17007: errorMessage = "البريد مستخدم بحساب آخر"
-                case 17008: errorMessage = "البريد الإلكتروني غير صحيح"
-                case 17026: errorMessage = "كلمة المرور لازم تكون ٦ أحرف أو أكثر"
-                default: errorMessage = error.localizedDescription
-                }
-            } else {
-                errorMessage = error.localizedDescription
-            }
-        }
-        #else
-        isAuthenticated = true; userId = UUID().uuidString; self.displayName = displayName
-        #endif
-        isLoading = false
-    }
 
-    func signIn(email: String, password: String) async {
-        isLoading = true; errorMessage = nil
-        #if canImport(FirebaseAuth)
-        do { try await Auth.auth().signIn(withEmail: email, password: password) }
-        catch {
-            let nsError = error as NSError
-            if nsError.domain == "FIRAuthErrorDomain" {
-                switch nsError.code {
-                case 17999: errorMessage = "خطأ في الإعدادات — تأكد من تفعيل تسجيل الدخول بالبريد"
-                case 17008: errorMessage = "البريد الإلكتروني غير صحيح"
-                case 17009: errorMessage = "كلمة المرور غير صحيحة"
-                case 17011: errorMessage = "لا يوجد حساب بهذا البريد"
-                case 17010: errorMessage = "تم تعطيل الحساب"
-                default: errorMessage = error.localizedDescription
-                }
-            } else {
-                errorMessage = error.localizedDescription
-            }
+        guard let cred = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            errorMessage = "فشل تسجيل الدخول"
+            isLoading = false
+            return
         }
-        #else
-        isAuthenticated = true; userId = "offline"; self.displayName = email.components(separatedBy: "@").first
-        #endif
+
+        let uid = cred.user
+        let name = [cred.fullName?.givenName, cred.fullName?.familyName]
+            .compactMap { $0 }
+            .joined(separator: " ")
+        let dn = name.isEmpty ? (displayName ?? "مستخدم") : name
+
+        // Save locally
+        UserDefaults.standard.set(uid, forKey: userIdKey)
+        UserDefaults.standard.set(dn, forKey: displayNameKey)
+
+        userId = uid
+        displayName = dn
+        isAuthenticated = true
+
+        // Create Firestore profile
+        await FirestoreService.shared.createUserProfileIfNeeded(
+            uid: uid,
+            displayName: dn,
+            email: cred.email ?? ""
+        )
+
         isLoading = false
     }
 
     func signOut() {
-        #if canImport(FirebaseAuth)
-        try? Auth.auth().signOut()
-        #else
-        isAuthenticated = false; userId = nil; displayName = nil
-        #endif
+        UserDefaults.standard.removeObject(forKey: userIdKey)
+        UserDefaults.standard.removeObject(forKey: displayNameKey)
+        userId = nil
+        displayName = nil
+        isAuthenticated = false
     }
 
-    func handleAppleSignIn(authorization: ASAuthorization, nonce: String) async {
-        isLoading = true; errorMessage = nil
-        #if canImport(FirebaseAuth)
-        guard let cred = authorization.credential as? ASAuthorizationAppleIDCredential,
-              let idToken = cred.identityToken,
-              let tokenStr = String(data: idToken, encoding: .utf8)
-        else { errorMessage = "فشل Apple"; isLoading = false; return }
-        let fbCred = OAuthProvider.appleCredential(withIDToken: tokenStr, rawNonce: nonce, fullName: cred.fullName)
-        do {
-            let result = try await Auth.auth().signIn(with: fbCred)
-            let dn = [cred.fullName?.givenName, cred.fullName?.familyName].compactMap{$0}.joined(separator: " ")
-            if !dn.isEmpty { let r = result.user.createProfileChangeRequest(); r.displayName = dn; try? await r.commitChanges() }
-            await FirestoreService.shared.createUserProfileIfNeeded(uid: result.user.uid, displayName: dn.isEmpty ? "مستخدم" : dn, email: result.user.email ?? "")
-        } catch { errorMessage = error.localizedDescription }
-        #else
-        isAuthenticated = true; userId = "apple"; displayName = "Apple User"
-        #endif
-        isLoading = false
+    /// Check if Apple ID credential is still valid
+    func validateSession() {
+        guard let uid = userId else { return }
+        ASAuthorizationAppleIDProvider().getCredentialState(forUserID: uid) { state, _ in
+            Task { @MainActor in
+                if state == .revoked || state == .notFound {
+                    self.signOut()
+                }
+            }
+        }
     }
 }

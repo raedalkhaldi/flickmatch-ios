@@ -22,8 +22,6 @@ targets:
           - Info.plist
     dependencies:
       - package: Firebase
-        product: FirebaseAuth
-      - package: Firebase
         product: FirebaseFirestore
       - package: Firebase
         product: FirebaseMessaging

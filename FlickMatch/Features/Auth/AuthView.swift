@@ -26,17 +26,12 @@ struct AuthView: View {
 
                 // Sign in with Apple
                 SignInWithAppleButton(.signIn) { request in
-                    let nonce = AppleSignInHelper.shared.generateNonce()
                     request.requestedScopes = [.fullName, .email]
-                    request.nonce = AppleSignInHelper.shared.sha256(nonce)
                 } onCompletion: { result in
                     switch result {
-                    case .success(let auth):
+                    case .success(let authorization):
                         Task {
-                            await self.auth.handleAppleSignIn(
-                                authorization: auth,
-                                nonce: AppleSignInHelper.shared.currentNonce ?? ""
-                            )
+                            await auth.handleAppleSignIn(authorization: authorization)
                         }
                     case .failure:
                         break

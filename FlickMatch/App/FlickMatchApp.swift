@@ -10,6 +10,7 @@ struct FlickMatchApp: App {
 
     init() {
         FirebaseConfig.configure()
+        AuthService.shared.validateSession()
     }
 
     var body: some Scene {
