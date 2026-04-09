@@ -22,6 +22,8 @@ struct HomeView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: currentVM.phase)
         .animation(.easeInOut(duration: 0.2), value: coordinator.selectedContentType)
+        .onAppear { currentVM.restoreIfNeeded() }
+        .onChange(of: coordinator.selectedContentType) { _ in currentVM.restoreIfNeeded() }
     }
 
     @ViewBuilder

@@ -54,6 +54,20 @@ final class RatingViewModel: ObservableObject {
 
     init(contentType: ContentItemType) {
         self.contentType = contentType
+        // Auto-restore: if user already rated 5+, jump straight to recommendations
+        if store.ratedCount(contentType: contentType) >= 5 {
+            phase = .loading
+        }
+    }
+
+    /// Called from onAppear — restores recommendations if user already rated
+    func restoreIfNeeded() {
+        guard phase == .loading else { return }
+        Task {
+            await loadGenres()
+            await generateRecommendations()
+            phase = .recommendations
+        }
     }
 
     // MARK: - Actions
@@ -74,7 +88,6 @@ final class RatingViewModel: ObservableObject {
     }
 
     func rateMore() {
-        guard canRateMore else { return }
         currentRound += 1
         Task {
             phase = .loading
@@ -148,7 +161,8 @@ final class RatingViewModel: ObservableObject {
                     )
                 }
             }
-            if store.ratedCount(contentType: contentType) >= 5 && round == 1 {
+            if round == 1 && store.ratedCount(contentType: contentType) >= 5 {
+                // Returning user with existing ratings — show recommendations directly
                 await generateRecommendations()
                 phase = .recommendations
             } else {

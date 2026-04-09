@@ -204,7 +204,7 @@ struct UserProfileSheet: View {
     }
 
     private func loadFollowState() async {
-        guard let myUid = AuthService.shared.userId else { return }
+        guard let myUid = await AuthService.shared.userId else { return }
         isFollowing = await FirestoreService.shared.isFollowing(followerId: myUid, followingId: userId)
     }
 

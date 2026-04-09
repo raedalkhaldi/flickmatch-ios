@@ -137,7 +137,7 @@ struct BottomNav: View {
     }
 
     private let items: [NavItem] = [
-        NavItem(tab: .home,          icon: "house",               activeIcon: "house.fill",              label: "الرئيسية"),
+        NavItem(tab: .home,          icon: "sparkles.rectangle.stack",  activeIcon: "sparkles.rectangle.stack.fill",  label: "التوصيات"),
         NavItem(tab: .discover,      icon: "person.2",            activeIcon: "person.2.fill",           label: "اكتشف"),
         NavItem(tab: .search,        icon: "magnifyingglass",     activeIcon: "magnifyingglass",         label: "بحث"),
         NavItem(tab: .notifications, icon: "bell",                activeIcon: "bell.fill",               label: "إشعارات"),

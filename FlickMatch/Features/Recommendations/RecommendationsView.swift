@@ -5,6 +5,23 @@ struct RecommendationsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Rate more button — top
+            Button(action: vm.rateMore) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 16))
+                    Text("قيّم عشر أخرى لتنقيح التوصيات")
+                        .font(AppTheme.arabic(14, weight: .bold))
+                }
+                .foregroundColor(AppTheme.background)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(AppTheme.goldGradient)
+                .cornerRadius(AppTheme.radius)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+
             // Taste badge
             VStack(spacing: 4) {
                 Text("بصمة ذوقك")
@@ -20,7 +37,7 @@ struct RecommendationsView: View {
             .overlay(RoundedRectangle(cornerRadius: AppTheme.radius).stroke(AppTheme.gold.opacity(0.15), lineWidth: 1))
             .cornerRadius(AppTheme.radius)
             .padding(.horizontal, 20)
-            .padding(.top, 14)
+            .padding(.top, 10)
 
             // Stats row
             HStack(spacing: 8) {
@@ -50,25 +67,6 @@ struct RecommendationsView: View {
                     }
                     .padding(.horizontal, 20)
                 }
-            }
-
-            // Rate more button
-            if vm.canRateMore {
-                Button(action: vm.rateMore) {
-                    Text("🎬 قيّم 10 ثانية لدقة أعلى")
-                        .font(AppTheme.arabic(14))
-                        .foregroundColor(AppTheme.gold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(AppTheme.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AppTheme.radius)
-                                .stroke(AppTheme.gold.opacity(0.25), lineWidth: 1)
-                        )
-                        .cornerRadius(AppTheme.radius)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
             }
 
             Spacer().frame(height: 80)
