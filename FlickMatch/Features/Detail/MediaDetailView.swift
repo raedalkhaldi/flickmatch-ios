@@ -9,6 +9,7 @@ struct MediaDetailView: View {
     @State private var trailerKey: String?
     @State private var isLoadingTrailer = true
     @State private var showFullOverview = false
+    @State private var watchProviders: WatchProviderCountry?
     @EnvironmentObject var ratingStore: RatingStore
     @EnvironmentObject var watchlistStore: WatchlistStore
 
@@ -200,7 +201,15 @@ struct MediaDetailView: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, -30)
-                        .padding(.bottom, 30)
+                        .padding(.bottom, 16)
+                    }
+
+                    // Watch Providers (Saudi Arabia)
+                    if let providers = watchProviders,
+                       (providers.flatrate != nil || providers.rent != nil || providers.buy != nil) {
+                        WatchProvidersView(providers: providers)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 30)
                     }
                 }
             }
@@ -221,7 +230,8 @@ struct MediaDetailView: View {
         async let trailerTask: Void = loadTrailer()
         async let genresTask: Void = loadGenres()
         async let detailsTask: Void = loadFullDetails()
-        _ = await (trailerTask, genresTask, detailsTask)
+        async let providersTask: Void = loadWatchProviders()
+        _ = await (trailerTask, genresTask, detailsTask, providersTask)
     }
 
     private func loadTrailer() async {
@@ -244,6 +254,15 @@ struct MediaDetailView: View {
             genres = media.contentType == .movie
                 ? try await TMDbService.shared.fetchMovieGenres()
                 : try await TMDbService.shared.fetchSeriesGenres()
+        } catch {}
+    }
+
+    private func loadWatchProviders() async {
+        do {
+            watchProviders = try await TMDbService.shared.fetchWatchProviders(
+                id: media.id,
+                contentType: media.contentType
+            )
         } catch {}
     }
 

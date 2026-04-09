@@ -19,6 +19,8 @@ enum TMDbEndpoint: Endpoint {
     case seriesGenres
     case searchMovies(query: String)
     case searchSeries(query: String)
+    case movieWatchProviders(id: Int)
+    case seriesWatchProviders(id: Int)
 
     private static let baseURL = "https://api.themoviedb.org/3"
     private static let readToken = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI3NjU4NzZmZmUyMzg0ZmZhOWM2ZDM1MWFjOWY2NmEyOSIsIm5iZiI6MTc3NTU5NDQwOS40NTIsInN1YiI6IjY5ZDU2YmE5OGFmMDRmNDBhOGNhODY2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ._szy4icDEutyskYvrIZw8690aWrraJxrvmi0zs8e6f4"
@@ -48,8 +50,10 @@ enum TMDbEndpoint: Endpoint {
         case .seriesTrailers(let id): return "/tv/\(id)/videos"
         case .movieGenres:            return "/genre/movie/list"
         case .seriesGenres:           return "/genre/tv/list"
-        case .searchMovies:           return "/search/movie"
-        case .searchSeries:           return "/search/tv"
+        case .searchMovies:                  return "/search/movie"
+        case .searchSeries:                  return "/search/tv"
+        case .movieWatchProviders(let id):   return "/movie/\(id)/watch/providers"
+        case .seriesWatchProviders(let id):  return "/tv/\(id)/watch/providers"
         }
     }
 
@@ -58,8 +62,8 @@ enum TMDbEndpoint: Endpoint {
         // Videos: don't filter by language (most trailers are English)
         // Other endpoints: use Arabic
         switch self {
-        case .movieTrailers, .seriesTrailers:
-            break // no language filter for videos
+        case .movieTrailers, .seriesTrailers, .movieWatchProviders, .seriesWatchProviders:
+            break // no language filter for videos/providers
         default:
             items.append(URLQueryItem(name: "language", value: "ar-SA"))
         }
@@ -78,6 +82,39 @@ enum TMDbEndpoint: Endpoint {
 // MARK: - Video Response
 struct VideoResponse: Codable {
     let results: [VideoResult]
+}
+
+// MARK: - Watch Providers Response
+struct WatchProvidersResponse: Codable {
+    let results: [String: WatchProviderCountry]?
+}
+
+struct WatchProviderCountry: Codable {
+    let link: String?
+    let flatrate: [WatchProvider]?  // Subscription (Netflix, etc.)
+    let rent: [WatchProvider]?
+    let buy: [WatchProvider]?
+}
+
+struct WatchProvider: Codable, Identifiable {
+    let providerId: Int
+    let providerName: String
+    let logoPath: String?
+    let displayPriority: Int?
+
+    var id: Int { providerId }
+
+    var logoURL: URL? {
+        guard let path = logoPath else { return nil }
+        return URL(string: "https://image.tmdb.org/t/p/w92\(path)")
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case providerId = "provider_id"
+        case providerName = "provider_name"
+        case logoPath = "logo_path"
+        case displayPriority = "display_priority"
+    }
 }
 
 struct VideoResult: Codable {

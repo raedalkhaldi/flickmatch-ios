@@ -69,6 +69,15 @@ final class TMDbService {
         return response.results
     }
 
+    // MARK: - Watch Providers (Saudi Arabia)
+    func fetchWatchProviders(id: Int, contentType: ContentItemType) async throws -> WatchProviderCountry? {
+        let endpoint: TMDbEndpoint = contentType == .movie
+            ? .movieWatchProviders(id: id)
+            : .seriesWatchProviders(id: id)
+        let response: WatchProvidersResponse = try await client.fetch(endpoint)
+        return response.results?["SA"] // Saudi Arabia
+    }
+
     // MARK: - Rating Rounds
     // Returns 10 items per round (page-based)
     func fetchRatingRound(contentType: ContentItemType, round: Int) async throws -> [AnyMedia] {

@@ -24,6 +24,7 @@
 		5C9796F9E18B4F3CCE026F93 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD1767172CF63404B1543E /* AppCoordinator.swift */; };
 		6865E5385C3583DD714FBC34 /* Recommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12022401E0C1F605B8F4801 /* Recommendation.swift */; };
 		73290F1D88CE25C06E8B43E2 /* UserProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3849344AB9BD5AF5118B57B /* UserProfileSheet.swift */; };
+		76C0ED5339873A91886C67E4 /* WatchProvidersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A9531949319DC2A31441F46 /* WatchProvidersView.swift */; };
 		77714CCB8B4730D54B07798B /* RatingPhaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1167D9991FFE4E2F54D93F /* RatingPhaseView.swift */; };
 		7A3F566E1CC95C4996A63F46 /* WatchLaterButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9014D5FB458F5E1BE7428AFE /* WatchLaterButton.swift */; };
 		7C8FD8FEF7FB5F571A680757 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AFB7130C07E7676C1E5A2D1B /* FirebaseFirestore */; };
@@ -59,6 +60,7 @@
 		19CD1767172CF63404B1543E /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		1AEEB098C9703AE5C283FB68 /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		1C5D184BEFC892EC0E5F0927 /* Series.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Series.swift; sourceTree = "<group>"; };
+		2A9531949319DC2A31441F46 /* WatchProvidersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchProvidersView.swift; sourceTree = "<group>"; };
 		381776E9D974AE88511D5381 /* Movie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Movie.swift; sourceTree = "<group>"; };
 		38704AB609DFA3895467E5DF /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		4B1C96DBFE02532EC2675EE3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
@@ -230,6 +232,7 @@
 				166189F87AD5DE13CBC55969 /* StarRatingView.swift */,
 				B3873BBDE054166373F9D270 /* TrailerButton.swift */,
 				9014D5FB458F5E1BE7428AFE /* WatchLaterButton.swift */,
+				2A9531949319DC2A31441F46 /* WatchProvidersView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -438,6 +441,7 @@
 				A798D78E1C61A7267A8041CC /* User.swift in Sources */,
 				73290F1D88CE25C06E8B43E2 /* UserProfileSheet.swift in Sources */,
 				7A3F566E1CC95C4996A63F46 /* WatchLaterButton.swift in Sources */,
+				76C0ED5339873A91886C67E4 /* WatchProvidersView.swift in Sources */,
 				D499F27C91625306641C51F0 /* WatchlistStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
