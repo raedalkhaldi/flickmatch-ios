@@ -10,33 +10,42 @@ struct StarRatingView: View {
         self.starSize = starSize
     }
 
+    private var totalWidth: CGFloat {
+        CGFloat(maxRating) * cellWidth
+    }
+
+    private var cellWidth: CGFloat {
+        max(starSize + 8, 30)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(1...maxRating, id: \.self) { star in
-                starButton(for: star)
+                let isFilled = star <= (rating ?? 0)
+                Image(systemName: isFilled ? "star.fill" : "star")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: starSize, height: starSize)
+                    .foregroundColor(isFilled ? AppTheme.gold : AppTheme.textDim.opacity(0.3))
+                    .scaleEffect(isFilled ? 1.0 : 0.9)
+                    .frame(width: cellWidth, height: 44)
             }
         }
-        .environment(\.layoutDirection, .leftToRight)
-    }
-
-    private func starButton(for star: Int) -> some View {
-        let isFilled = star <= (rating ?? 0)
-        return Image(systemName: isFilled ? "star.fill" : "star")
-            .resizable()
-            .scaledToFit()
-            .frame(width: starSize, height: starSize)
-            .foregroundColor(isFilled ? AppTheme.gold : AppTheme.textDim.opacity(0.3))
-            .scaleEffect(isFilled ? 1.0 : 0.9)
-            .frame(width: max(starSize + 8, 30), height: 44)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.12)) {
-                    if rating == star {
-                        rating = nil
-                    } else {
-                        rating = star
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                .onEnded { value in
+                    let x = value.location.x
+                    let tappedStar = max(1, min(maxRating, Int(x / cellWidth) + 1))
+                    withAnimation(.easeInOut(duration: 0.12)) {
+                        if rating == tappedStar {
+                            rating = nil
+                        } else {
+                            rating = tappedStar
+                        }
                     }
                 }
-            }
+        )
+        .environment(\.layoutDirection, .leftToRight)
     }
 }

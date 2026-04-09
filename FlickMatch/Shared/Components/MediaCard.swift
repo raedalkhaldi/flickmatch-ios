@@ -6,6 +6,7 @@ struct MediaCard: View {
     let genres: [Genre]
     @Binding var rating: Int?
     @Binding var hasNotSeen: Bool
+    @EnvironmentObject var watchlistStore: WatchlistStore
 
     var body: some View {
         VStack(spacing: 0) {
@@ -99,9 +100,14 @@ struct MediaCard: View {
                     }
                 }
 
-                // "Haven't seen" button — below stars
+                // Actions row
                 HStack {
+                    // Watch later button
+                    WatchLaterIconButton(media: media)
+
                     Spacer()
+
+                    // "Haven't seen" button
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             hasNotSeen.toggle()

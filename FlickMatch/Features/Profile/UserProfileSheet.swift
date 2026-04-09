@@ -10,6 +10,7 @@ struct UserProfileSheet: View {
     @State private var ratings: [FirestoreRating] = []
     @State private var isLoading = true
     @State private var selectedTab: TabChoice = .movies
+    @State private var isFollowing = false
     @Environment(\.dismiss) private var dismiss
 
     enum TabChoice { case movies, series }
@@ -79,6 +80,35 @@ struct UserProfileSheet: View {
                             .background(AppTheme.green.opacity(0.08))
                             .cornerRadius(12)
 
+                            // Follow button
+                            Button {
+                                withAnimation {
+                                    isFollowing.toggle()
+                                    Task {
+                                        guard let myUid = AuthService.shared.userId else { return }
+                                        if isFollowing {
+                                            await FirestoreService.shared.follow(followerId: myUid, followingId: userId)
+                                        } else {
+                                            await FirestoreService.shared.unfollow(followerId: myUid, followingId: userId)
+                                        }
+                                    }
+                                }
+                            } label: {
+                                Text(isFollowing ? "تتابعه ✓" : "+ تابع")
+                                    .font(AppTheme.arabic(13, weight: .semibold))
+                                    .foregroundColor(isFollowing ? AppTheme.textDim : AppTheme.background)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 8)
+                                    .background(isFollowing ? Color.clear : AppTheme.gold)
+                                    .overlay(
+                                        Capsule().stroke(
+                                            isFollowing ? Color(hex: "#333333") : Color.clear,
+                                            lineWidth: 1
+                                        )
+                                    )
+                                    .clipShape(Capsule())
+                            }
+
                             // Stats
                             HStack(spacing: 30) {
                                 ProfileStat(value: "\(movieRatings.count)", label: "أفلام")
@@ -147,7 +177,10 @@ struct UserProfileSheet: View {
                 }
             }
         }
-        .task { await loadRatings() }
+        .task {
+            await loadRatings()
+            await loadFollowState()
+        }
     }
 
     private func tabButton(title: String, tab: TabChoice) -> some View {
@@ -168,6 +201,11 @@ struct UserProfileSheet: View {
     private func loadRatings() async {
         ratings = await FirestoreService.shared.fetchUserRatings(userId: userId)
         isLoading = false
+    }
+
+    private func loadFollowState() async {
+        guard let myUid = AuthService.shared.userId else { return }
+        isFollowing = await FirestoreService.shared.isFollowing(followerId: myUid, followingId: userId)
     }
 
     private func posterURL(for r: FirestoreRating) -> URL? {

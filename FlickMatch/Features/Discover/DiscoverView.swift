@@ -5,6 +5,7 @@ final class DiscoverViewModel: ObservableObject {
     @Published var users: [DiscoverUser] = []
     @Published var followedIds: Set<String> = []
     @Published var isLoading = false
+    private var hasLoaded = false
 
     private let firestore = FirestoreService.shared
     private let store = RatingStore.shared
@@ -17,8 +18,9 @@ final class DiscoverViewModel: ObservableObject {
         let topRatings: [FirestoreRating]
     }
 
-    func load() async {
+    func load(force: Bool = false) async {
         guard let uid = AuthService.shared.userId else { return }
+        guard !hasLoaded || force else { return }
         isLoading = true
 
         // Load followed IDs
@@ -57,19 +59,27 @@ final class DiscoverViewModel: ObservableObject {
         }
 
         isLoading = false
+        hasLoaded = true
+    }
+
+    func refreshFollowedIds() async {
+        guard let uid = AuthService.shared.userId else { return }
+        followedIds = await firestore.fetchFollowedIds(userId: uid)
     }
 
     func toggleFollow(userId: String) {
         guard let myUid = AuthService.shared.userId else { return }
-        Task {
-            if followedIds.contains(userId) {
-                followedIds.remove(userId)
-                await firestore.unfollow(followerId: myUid, followingId: userId)
-            } else {
-                followedIds.insert(userId)
-                await firestore.follow(followerId: myUid, followingId: userId)
-            }
+        if followedIds.contains(userId) {
+            followedIds.remove(userId)
+            Task { await firestore.unfollow(followerId: myUid, followingId: userId) }
+        } else {
+            followedIds.insert(userId)
+            Task { await firestore.follow(followerId: myUid, followingId: userId) }
         }
+    }
+
+    func isFollowing(userId: String) -> Bool {
+        followedIds.contains(userId)
     }
 
     private func calculateMatch(myRatings: [Int: Int], otherRatings: [FirestoreRating]) -> Int {

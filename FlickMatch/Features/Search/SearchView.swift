@@ -259,6 +259,11 @@ struct SuggestionPosterCard: View {
             .aspectRatio(2/3, contentMode: .fit)
             .cornerRadius(10)
             .clipped()
+            .overlay(alignment: .topTrailing) {
+                WatchLaterIconButton(media: media)
+                    .scaleEffect(0.8)
+                    .shadow(color: .black.opacity(0.5), radius: 2)
+            }
 
             VStack(spacing: 2) {
                 Text(media.originalTitle)
