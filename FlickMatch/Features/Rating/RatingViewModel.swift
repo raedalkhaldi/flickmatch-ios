@@ -192,8 +192,24 @@ final class RatingViewModel: ObservableObject {
         // 2. Compute taste badge from top-rated genres
         await computeTasteBadge(myRatings: myRatings)
 
-        // 3. Try Firestore collaborative filtering
-        let firestoreRecs = await firestoreCollaborativeFilter(myRatingMap: myRatingMap, myRatedIds: myRatedIds)
+        // 3. Try Firestore collaborative filtering (with 5s timeout)
+        let firestoreRecs: [Recommendation]
+        do {
+            firestoreRecs = try await withThrowingTaskGroup(of: [Recommendation].self) { group in
+                group.addTask {
+                    await self.firestoreCollaborativeFilter(myRatingMap: myRatingMap, myRatedIds: myRatedIds)
+                }
+                group.addTask {
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                    throw CancellationError()
+                }
+                let result = try await group.next() ?? []
+                group.cancelAll()
+                return result
+            }
+        } catch {
+            firestoreRecs = []
+        }
 
         if !firestoreRecs.isEmpty {
             recommendations = firestoreRecs
