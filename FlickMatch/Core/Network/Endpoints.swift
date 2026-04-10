@@ -21,6 +21,8 @@ enum TMDbEndpoint: Endpoint {
     case searchSeries(query: String)
     case movieWatchProviders(id: Int)
     case seriesWatchProviders(id: Int)
+    case movieReleaseDates(id: Int)
+    case seriesContentRatings(id: Int)
 
     private static let baseURL = "https://api.themoviedb.org/3"
     private static let readToken = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI3NjU4NzZmZmUyMzg0ZmZhOWM2ZDM1MWFjOWY2NmEyOSIsIm5iZiI6MTc3NTU5NDQwOS40NTIsInN1YiI6IjY5ZDU2YmE5OGFmMDRmNDBhOGNhODY2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ._szy4icDEutyskYvrIZw8690aWrraJxrvmi0zs8e6f4"
@@ -54,6 +56,8 @@ enum TMDbEndpoint: Endpoint {
         case .searchSeries:                  return "/search/tv"
         case .movieWatchProviders(let id):   return "/movie/\(id)/watch/providers"
         case .seriesWatchProviders(let id):  return "/tv/\(id)/watch/providers"
+        case .movieReleaseDates(let id):     return "/movie/\(id)/release_dates"
+        case .seriesContentRatings(let id):  return "/tv/\(id)/content_ratings"
         }
     }
 
@@ -62,8 +66,9 @@ enum TMDbEndpoint: Endpoint {
         // Videos: don't filter by language (most trailers are English)
         // Other endpoints: use Arabic
         switch self {
-        case .movieTrailers, .seriesTrailers, .movieWatchProviders, .seriesWatchProviders:
-            break // no language filter for videos/providers
+        case .movieTrailers, .seriesTrailers, .movieWatchProviders, .seriesWatchProviders,
+             .movieReleaseDates, .seriesContentRatings:
+            break // no language filter for videos/providers/ratings
         default:
             items.append(URLQueryItem(name: "language", value: "ar-SA"))
         }
@@ -114,6 +119,43 @@ struct WatchProvider: Codable, Identifiable {
         case providerName = "provider_name"
         case logoPath = "logo_path"
         case displayPriority = "display_priority"
+    }
+}
+
+// MARK: - Age / Content Rating Responses
+
+/// Movies — /movie/{id}/release_dates
+struct ReleaseDatesResponse: Codable {
+    let results: [ReleaseDatesCountry]
+}
+
+struct ReleaseDatesCountry: Codable {
+    let iso3166_1: String
+    let releaseDates: [ReleaseDateEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case iso3166_1 = "iso_3166_1"
+        case releaseDates = "release_dates"
+    }
+}
+
+struct ReleaseDateEntry: Codable {
+    let certification: String
+    let type: Int?
+}
+
+/// Series — /tv/{id}/content_ratings
+struct ContentRatingsResponse: Codable {
+    let results: [ContentRatingEntry]
+}
+
+struct ContentRatingEntry: Codable {
+    let iso3166_1: String
+    let rating: String
+
+    enum CodingKeys: String, CodingKey {
+        case iso3166_1 = "iso_3166_1"
+        case rating
     }
 }
 

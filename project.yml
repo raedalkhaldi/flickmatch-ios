@@ -31,7 +31,7 @@ targets:
       PRODUCT_NAME: FlickMatch
       PRODUCT_BUNDLE_IDENTIFIER: com.flickmatch.app
       SWIFT_VERSION: "5.9"
-      MARKETING_VERSION: "1.0"
+      MARKETING_VERSION: "1.2.4"
       CURRENT_PROJECT_VERSION: "1"
       GENERATE_INFOPLIST_FILE: YES
       INFOPLIST_KEY_CFBundleDisplayName: FlickMatch

@@ -69,6 +69,46 @@ final class TMDbService {
         return response.results
     }
 
+    // MARK: - Age / Content Rating
+    /// Returns the best available age rating for SA, falling back to US then any non-empty rating.
+    func fetchAgeRating(id: Int, contentType: ContentItemType) async throws -> String? {
+        switch contentType {
+        case .movie:
+            let response: ReleaseDatesResponse = try await client.fetch(TMDbEndpoint.movieReleaseDates(id: id))
+            return pickMovieCertification(from: response.results)
+        case .series:
+            let response: ContentRatingsResponse = try await client.fetch(TMDbEndpoint.seriesContentRatings(id: id))
+            return pickSeriesRating(from: response.results)
+        }
+    }
+
+    private func pickMovieCertification(from countries: [ReleaseDatesCountry]) -> String? {
+        let preferred = ["SA", "AE", "US", "GB"]
+        for code in preferred {
+            if let country = countries.first(where: { $0.iso3166_1 == code }),
+               let cert = country.releaseDates.first(where: { !$0.certification.isEmpty })?.certification {
+                return cert
+            }
+        }
+        // Any country with a non-empty certification
+        for country in countries {
+            if let cert = country.releaseDates.first(where: { !$0.certification.isEmpty })?.certification {
+                return cert
+            }
+        }
+        return nil
+    }
+
+    private func pickSeriesRating(from entries: [ContentRatingEntry]) -> String? {
+        let preferred = ["SA", "AE", "US", "GB"]
+        for code in preferred {
+            if let entry = entries.first(where: { $0.iso3166_1 == code && !$0.rating.isEmpty }) {
+                return entry.rating
+            }
+        }
+        return entries.first(where: { !$0.rating.isEmpty })?.rating
+    }
+
     // MARK: - Watch Providers (Saudi Arabia)
     func fetchWatchProviders(id: Int, contentType: ContentItemType) async throws -> WatchProviderCountry? {
         let endpoint: TMDbEndpoint = contentType == .movie

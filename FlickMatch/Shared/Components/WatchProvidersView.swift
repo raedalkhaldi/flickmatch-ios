@@ -102,52 +102,92 @@ struct ProviderSection: View {
 
 // MARK: - Provider Deep Linking
 enum ProviderDeepLink {
-    /// Known provider IDs from TMDb → deep link info
-    private static let providerMap: [Int: (scheme: String?, searchURL: String)] = [
-        // Netflix
-        8:   (scheme: "nflx://", searchURL: "https://www.netflix.com/search?q={query}"),
+    /// Known provider IDs from TMDb → (URL scheme for app, web fallback)
+    /// The appURL uses the provider's registered URL scheme so iOS opens the app
+    /// directly instead of Safari. If the app is not installed or scheme fails,
+    /// the webURL is used as a fallback.
+    private static let providerMap: [Int: (appURL: String?, webURL: String)] = [
+        // Netflix — nflx:// scheme opens the Netflix app directly
+        8:   (appURL: "nflx://www.netflix.com/search?q={query}",
+              webURL: "https://www.netflix.com/search?q={query}"),
         // Amazon Prime Video
-        119: (scheme: "aiv://", searchURL: "https://www.primevideo.com/search?phrase={query}"),
-        9:   (scheme: "aiv://", searchURL: "https://www.primevideo.com/search?phrase={query}"),
+        119: (appURL: "aiv://aiv/search?phrase={query}",
+              webURL: "https://www.primevideo.com/search?phrase={query}"),
+        9:   (appURL: "aiv://aiv/search?phrase={query}",
+              webURL: "https://www.primevideo.com/search?phrase={query}"),
         // Disney+
-        337: (scheme: "disneyplus://", searchURL: "https://www.disneyplus.com/search?q={query}"),
-        // Apple TV+
-        350: (scheme: nil, searchURL: "https://tv.apple.com/search?term={query}"),
-        2:   (scheme: nil, searchURL: "https://tv.apple.com/search?term={query}"),
-        // Shahid
-        1715: (scheme: "shahid://", searchURL: "https://shahid.mbc.net/ar/search?q={query}"),
+        337: (appURL: "disneyplus://search?q={query}",
+              webURL: "https://www.disneyplus.com/search?q={query}"),
+        // Apple TV+ — universal link opens TV app directly on iOS
+        350: (appURL: nil,
+              webURL: "https://tv.apple.com/search?term={query}"),
+        2:   (appURL: nil,
+              webURL: "https://tv.apple.com/search?term={query}"),
+        // Shahid (MBC)
+        1715: (appURL: "shahid://search?q={query}",
+               webURL: "https://shahid.mbc.net/ar/search?q={query}"),
         // OSN+
-        629: (scheme: "osnplus://", searchURL: "https://www.osn.com/en/search?q={query}"),
+        629: (appURL: "osnplus://search?q={query}",
+              webURL: "https://www.osn.com/en/search?q={query}"),
         // TOD (beIN)
-        1498: (scheme: nil, searchURL: "https://www.tod.tv/search?q={query}"),
+        1498: (appURL: "tod://",
+               webURL: "https://www.tod.tv/search?q={query}"),
         // Starz Play / Lionsgate+
-        43:  (scheme: "starzplay://", searchURL: "https://www.starzplay.com/search?q={query}"),
+        43:  (appURL: "starzplay://search?q={query}",
+              webURL: "https://www.starzplay.com/search?q={query}"),
         // Viu
-        158: (scheme: "viu://", searchURL: "https://www.viu.com/search?q={query}"),
+        158: (appURL: "viu://search?q={query}",
+              webURL: "https://www.viu.com/search?q={query}"),
         // Crunchyroll
-        283: (scheme: "crunchyroll://", searchURL: "https://www.crunchyroll.com/search?q={query}"),
+        283: (appURL: "crunchyroll://search?q={query}",
+              webURL: "https://www.crunchyroll.com/search?q={query}"),
         // Paramount+
-        531: (scheme: "paramountplus://", searchURL: "https://www.paramountplus.com/search?q={query}"),
-        // YouTube
-        192: (scheme: nil, searchURL: "https://www.youtube.com/results?search_query={query}"),
+        531: (appURL: "paramountplus://search?q={query}",
+              webURL: "https://www.paramountplus.com/search?q={query}"),
+        // YouTube — youtube:// opens app directly
+        192: (appURL: "youtube://www.youtube.com/results?search_query={query}",
+              webURL: "https://www.youtube.com/results?search_query={query}"),
         // Google Play
-        3:   (scheme: nil, searchURL: "https://play.google.com/store/search?q={query}&c=movies"),
+        3:   (appURL: nil,
+              webURL: "https://play.google.com/store/search?q={query}&c=movies"),
     ]
 
     static func open(provider: WatchProvider, title: String) {
         let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? title
 
-        // 1. Try known search URL (universal link — opens app if installed, Safari if not)
-        if let info = providerMap[provider.providerId] {
-            let searchStr = info.searchURL.replacingOccurrences(of: "{query}", with: encoded)
-            if let url = URL(string: searchStr) {
-                UIApplication.shared.open(url)
+        guard let info = providerMap[provider.providerId] else {
+            openWebFallback(title: encoded, providerName: provider.providerName)
+            return
+        }
+
+        // 1. Try the native URL scheme first (opens the app directly)
+        if let appTemplate = info.appURL {
+            let appStr = appTemplate.replacingOccurrences(of: "{query}", with: encoded)
+            if let appURL = URL(string: appStr) {
+                UIApplication.shared.open(appURL, options: [:]) { success in
+                    if !success {
+                        // App not installed or can't open the scheme → web fallback
+                        openWeb(info.webURL, encoded: encoded)
+                    }
+                }
                 return
             }
         }
 
-        // 2. Fallback: Google search for "watch [title] on [provider]"
-        let fallback = "https://www.google.com/search?q=watch+\(encoded)+on+\(provider.providerName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        // 2. No app scheme — use web/universal link
+        openWeb(info.webURL, encoded: encoded)
+    }
+
+    private static func openWeb(_ template: String, encoded: String) {
+        let str = template.replacingOccurrences(of: "{query}", with: encoded)
+        if let url = URL(string: str) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private static func openWebFallback(title encoded: String, providerName: String) {
+        let providerEncoded = providerName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let fallback = "https://www.google.com/search?q=watch+\(encoded)+on+\(providerEncoded)"
         if let url = URL(string: fallback) {
             UIApplication.shared.open(url)
         }

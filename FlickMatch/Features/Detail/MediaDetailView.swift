@@ -10,6 +10,7 @@ struct MediaDetailView: View {
     @State private var isLoadingTrailer = true
     @State private var showFullOverview = false
     @State private var watchProviders: WatchProviderCountry?
+    @State private var ageRating: String?
     @EnvironmentObject var ratingStore: RatingStore
     @EnvironmentObject var watchlistStore: WatchlistStore
 
@@ -90,6 +91,19 @@ struct MediaDetailView: View {
                                 Text(displayMedia.year)
                                     .font(.system(size: 13))
                                     .foregroundColor(AppTheme.textDim)
+
+                                if let rating = ageRating, !rating.isEmpty {
+                                    Text("•").foregroundColor(AppTheme.textDim)
+                                    Text(rating)
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(AppTheme.textPrimary)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .stroke(AppTheme.textDim, lineWidth: 1)
+                                        )
+                                }
                             }
 
                             // Genres
@@ -231,7 +245,8 @@ struct MediaDetailView: View {
         async let genresTask: Void = loadGenres()
         async let detailsTask: Void = loadFullDetails()
         async let providersTask: Void = loadWatchProviders()
-        _ = await (trailerTask, genresTask, detailsTask, providersTask)
+        async let ratingTask: Void = loadAgeRating()
+        _ = await (trailerTask, genresTask, detailsTask, providersTask, ratingTask)
     }
 
     private func loadTrailer() async {
@@ -254,6 +269,15 @@ struct MediaDetailView: View {
             genres = media.contentType == .movie
                 ? try await TMDbService.shared.fetchMovieGenres()
                 : try await TMDbService.shared.fetchSeriesGenres()
+        } catch {}
+    }
+
+    private func loadAgeRating() async {
+        do {
+            ageRating = try await TMDbService.shared.fetchAgeRating(
+                id: media.id,
+                contentType: media.contentType
+            )
         } catch {}
     }
 
