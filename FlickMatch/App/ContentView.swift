@@ -28,6 +28,15 @@ struct ContentView: View {
                     }
             }
         }
+        // Global sign-in sheet — triggered by any feature that requires an
+        // authenticated user (e.g. follow, cloud-sync). Browsing features
+        // remain fully accessible without sign-in per Guideline 5.1.1(v).
+        .sheet(isPresented: $coordinator.showAuthSheet) {
+            AuthView(
+                isPresentedAsSheet: true,
+                contextMessage: coordinator.authSheetContext
+            )
+        }
     }
 
     @ViewBuilder

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var auth: AuthService
+    @EnvironmentObject var coordinator: AppCoordinator
     @Environment(\.dismiss) private var dismiss
 
     @State private var showDeleteConfirm = false
@@ -25,9 +26,13 @@ struct SettingsView: View {
                 AppTheme.background.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
-                        // Account section
+                        // Account section — differs for guest vs signed-in
                         section(title: "الحساب") {
-                            accountCard
+                            if auth.isAuthenticated {
+                                accountCard
+                            } else {
+                                guestSignInCard
+                            }
                         }
 
                         // Legal
@@ -78,22 +83,25 @@ struct SettingsView: View {
                             .cardStyle()
                         }
 
-                        // Danger zone
-                        section(title: "منطقة الحذر") {
-                            VStack(spacing: 12) {
-                                Button { showSignOutConfirm = true } label: {
-                                    actionRowLabel(icon: "rectangle.portrait.and.arrow.right",
-                                                   label: "تسجيل خروج",
-                                                   tint: AppTheme.textPrimary)
-                                }
-                                .cardStyle()
+                        // Danger zone — only shown for signed-in users.
+                        // Guests have no cloud account to sign out of or delete.
+                        if auth.isAuthenticated {
+                            section(title: "منطقة الحذر") {
+                                VStack(spacing: 12) {
+                                    Button { showSignOutConfirm = true } label: {
+                                        actionRowLabel(icon: "rectangle.portrait.and.arrow.right",
+                                                       label: "تسجيل خروج",
+                                                       tint: AppTheme.textPrimary)
+                                    }
+                                    .cardStyle()
 
-                                Button { showDeleteConfirm = true } label: {
-                                    actionRowLabel(icon: "trash",
-                                                   label: "حذف الحساب نهائياً",
-                                                   tint: AppTheme.accent)
+                                    Button { showDeleteConfirm = true } label: {
+                                        actionRowLabel(icon: "trash",
+                                                       label: "حذف الحساب نهائياً",
+                                                       tint: AppTheme.accent)
+                                    }
+                                    .cardStyle()
                                 }
-                                .cardStyle()
                             }
                         }
 
@@ -162,6 +170,62 @@ struct SettingsView: View {
                 Text("سيتم حذف حسابك، تقييماتك، قائمة المتابعة، وقائمة \"أشوفه لاحقاً\" نهائياً. لا يمكن التراجع عن هذا الإجراء.")
             }
         }
+    }
+
+    // MARK: - Guest sign-in card
+    private var guestSignInCard: some View {
+        VStack(alignment: .trailing, spacing: 10) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.surface)
+                        .frame(width: 48, height: 48)
+                        .overlay(Circle().stroke(AppTheme.gold.opacity(0.4), lineWidth: 1))
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(AppTheme.gold)
+                }
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("زائر")
+                        .font(AppTheme.arabic(15, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text("غير مسجّل دخول")
+                        .font(AppTheme.arabic(11))
+                        .foregroundColor(AppTheme.textDim)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+
+            Text("سجّل دخولك بـ Apple عشان تحفظ تقييماتك وقائمتك عبر الأجهزة وتتابع الأصدقاء.")
+                .font(AppTheme.arabic(12))
+                .foregroundColor(AppTheme.textDim)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+            Button {
+                dismiss()
+                // Defer slightly so the settings sheet is gone before the auth sheet appears.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    coordinator.requestSignIn(
+                        context: "سجّل دخولك عشان تحفظ تقييماتك ومتابعاتك"
+                    )
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "applelogo")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("تسجيل الدخول بـ Apple")
+                        .font(AppTheme.arabic(13, weight: .semibold))
+                }
+                .foregroundColor(AppTheme.background)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(AppTheme.gold)
+                .cornerRadius(AppTheme.radius)
+            }
+        }
+        .padding(14)
+        .cardStyle()
     }
 
     // MARK: - Account card

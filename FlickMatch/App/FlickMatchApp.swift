@@ -30,13 +30,11 @@ struct FlickMatchApp: App {
 }
 
 struct RootView: View {
-    @EnvironmentObject var auth: AuthService
-
+    // App Store Review Guideline 5.1.1(v): features that are not
+    // account-based must be accessible without registration.
+    // We always show the main ContentView. Sign in is requested only
+    // when the user attempts an account-based action (follow, sync, etc).
     var body: some View {
-        if auth.isAuthenticated {
-            ContentView()
-        } else {
-            AuthView()
-        }
+        ContentView()
     }
 }

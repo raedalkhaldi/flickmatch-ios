@@ -3,12 +3,37 @@ import AuthenticationServices
 
 struct AuthView: View {
     @EnvironmentObject var auth: AuthService
+    @Environment(\.dismiss) private var dismiss
+
+    /// When true, the view shows a close button in the top-right and will
+    /// auto-dismiss once the user signs in. Use this when presenting AuthView
+    /// as a sheet from inside the app (rather than as a root screen).
+    var isPresentedAsSheet: Bool = false
+    /// Optional context line shown above the logo (e.g. "سجّل لمتابعة المستخدمين").
+    var contextMessage: String? = nil
 
     var body: some View {
         ZStack {
             AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Close button (only when presented as a sheet)
+                if isPresentedAsSheet {
+                    HStack {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(AppTheme.textDim)
+                                .frame(width: 36, height: 36)
+                                .background(AppTheme.surface)
+                                .clipShape(Circle())
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                }
+
                 Spacer()
 
                 // Logo
@@ -21,6 +46,15 @@ struct AuthView: View {
                     Text("لاقي توأم ذوقك")
                         .font(AppTheme.arabic(15))
                         .foregroundColor(AppTheme.textDim)
+
+                    if let ctx = contextMessage, !ctx.isEmpty {
+                        Text(ctx)
+                            .font(AppTheme.arabic(13))
+                            .foregroundColor(AppTheme.gold)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                            .padding(.top, 6)
+                    }
                 }
                 .padding(.bottom, 50)
 
@@ -95,6 +129,11 @@ struct AuthView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
                 .padding(.bottom, 30)
+            }
+        }
+        .onChange(of: auth.isAuthenticated) { newValue in
+            if isPresentedAsSheet && newValue {
+                dismiss()
             }
         }
     }

@@ -54,41 +54,49 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
 
-                    // Header
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(LinearGradient(
-                                    colors: [AppTheme.gold, AppTheme.goldDim],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ))
-                                .frame(width: 80, height: 80)
-                                .shadow(color: AppTheme.gold.opacity(0.3), radius: 20)
-                            Text("👤")
-                                .font(.system(size: 32))
-                        }
+                    // Guest header — prompts sign-in when not authenticated,
+                    // while still showing any local ratings/watchlist below.
+                    if !auth.isAuthenticated {
+                        guestHeader
+                    }
 
-                        VStack(spacing: 2) {
-                            Text(auth.displayName ?? "أنت")
-                                .font(AppTheme.arabic(20, weight: .bold))
-                                .foregroundColor(AppTheme.textPrimary)
-                            if let uid = auth.userId {
-                                Text("@\(String(uid.prefix(8)))")
-                                    .font(AppTheme.arabic(13))
-                                    .foregroundColor(AppTheme.textDim)
+                    // Header (signed-in user)
+                    if auth.isAuthenticated {
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(LinearGradient(
+                                        colors: [AppTheme.gold, AppTheme.goldDim],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: 80, height: 80)
+                                    .shadow(color: AppTheme.gold.opacity(0.3), radius: 20)
+                                Text("👤")
+                                    .font(.system(size: 32))
+                            }
+
+                            VStack(spacing: 2) {
+                                Text(auth.displayName ?? "أنت")
+                                    .font(AppTheme.arabic(20, weight: .bold))
+                                    .foregroundColor(AppTheme.textPrimary)
+                                if let uid = auth.userId {
+                                    Text("@\(String(uid.prefix(8)))")
+                                        .font(AppTheme.arabic(13))
+                                        .foregroundColor(AppTheme.textDim)
+                                }
+                            }
+
+                            // Stats
+                            HStack(spacing: 24) {
+                                ProfileStat(value: "\(ratingStore.ratedCount(contentType: .movie))", label: "أفلام")
+                                ProfileStat(value: "\(ratingStore.ratedCount(contentType: .series))", label: "مسلسلات")
+                                ProfileStat(value: "\(followingUsers.count)", label: "متابَع")
                             }
                         }
-
-                        // Stats
-                        HStack(spacing: 24) {
-                            ProfileStat(value: "\(ratingStore.ratedCount(contentType: .movie))", label: "أفلام")
-                            ProfileStat(value: "\(ratingStore.ratedCount(contentType: .series))", label: "مسلسلات")
-                            ProfileStat(value: "\(followingUsers.count)", label: "متابَع")
-                        }
+                        .padding(.top, 10)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.top, 10)
-                    .padding(.bottom, 20)
 
                     // Tabs
                     HStack(spacing: 0) {
@@ -119,6 +127,63 @@ struct ProfileView: View {
             SettingsView()
                 .environmentObject(auth)
         }
+    }
+
+    // MARK: - Guest header (shown when not signed in)
+    @ViewBuilder
+    private var guestHeader: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(AppTheme.surface)
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        Circle().stroke(AppTheme.gold.opacity(0.4), lineWidth: 1)
+                    )
+                Image(systemName: "person.fill")
+                    .font(.system(size: 32))
+                    .foregroundColor(AppTheme.gold)
+            }
+
+            VStack(spacing: 6) {
+                Text("زائر")
+                    .font(AppTheme.arabic(18, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("سجّل دخولك عشان تحفظ تقييماتك وقائمتك عبر الأجهزة وتتابع أصحابك")
+                    .font(AppTheme.arabic(12))
+                    .foregroundColor(AppTheme.textDim)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+            }
+
+            Button {
+                coordinator.requestSignIn(
+                    context: "سجّل دخولك عشان تحفظ تقييماتك ومتابعاتك"
+                )
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "applelogo")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("تسجيل الدخول بـ Apple")
+                        .font(AppTheme.arabic(13, weight: .semibold))
+                }
+                .foregroundColor(AppTheme.background)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(AppTheme.gold)
+                .clipShape(Capsule())
+            }
+
+            // Local stats still shown so the tab is never empty for guests
+            HStack(spacing: 24) {
+                ProfileStat(value: "\(ratingStore.ratedCount(contentType: .movie))", label: "أفلام")
+                ProfileStat(value: "\(ratingStore.ratedCount(contentType: .series))", label: "مسلسلات")
+                ProfileStat(value: "\(watchlistStore.fetchAll().count)", label: "أشوفه")
+            }
+            .padding(.top, 4)
+        }
+        .padding(.top, 10)
+        .padding(.bottom, 20)
     }
 
     // MARK: - Top List

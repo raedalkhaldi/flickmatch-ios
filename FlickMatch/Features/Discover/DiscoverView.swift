@@ -19,22 +19,26 @@ final class DiscoverViewModel: ObservableObject {
     }
 
     func load(force: Bool = false) async {
-        guard let uid = AuthService.shared.userId else { return }
         guard !hasLoaded || force else { return }
         isLoading = true
 
-        // Load followed IDs
-        followedIds = await firestore.fetchFollowedIds(userId: uid)
+        // Signed-in users get their real follow graph; guests see an empty set.
+        let uid = AuthService.shared.userId
+        if let uid = uid {
+            followedIds = await firestore.fetchFollowedIds(userId: uid)
+        } else {
+            followedIds = []
+        }
 
-        // Load my ratings for comparison
+        // Load my ratings for comparison (works for guests — local only)
         let myMovieRatings = store.fetchAll(contentType: .movie).filter { $0.score > 0 }
         let mySeriesRatings = store.fetchAll(contentType: .series).filter { $0.score > 0 }
         var myRatingMap: [Int: Int] = [:]
         for r in myMovieRatings { myRatingMap[r.contentId] = r.score }
         for r in mySeriesRatings { myRatingMap[r.contentId] = r.score }
 
-        // Fetch users from Firestore
-        let firestoreUsers = await firestore.fetchDiscoverUsers(excludeUserId: uid)
+        // Fetch users from Firestore (excludeUserId: "" for guests is fine)
+        let firestoreUsers = await firestore.fetchDiscoverUsers(excludeUserId: uid ?? "")
 
         var discoverUsers: [DiscoverUser] = []
         for (user, ratings) in firestoreUsers {
@@ -67,8 +71,12 @@ final class DiscoverViewModel: ObservableObject {
         followedIds = await firestore.fetchFollowedIds(userId: uid)
     }
 
-    func toggleFollow(userId: String) {
-        guard let myUid = AuthService.shared.userId else { return }
+    /// Attempts to toggle follow. Returns `false` if the user is not signed in
+    /// — the caller should then present the sign-in sheet. Returns `true` when
+    /// the action was performed (signed-in users only).
+    @discardableResult
+    func toggleFollow(userId: String) -> Bool {
+        guard let myUid = AuthService.shared.userId else { return false }
         if followedIds.contains(userId) {
             followedIds.remove(userId)
             Task { await firestore.unfollow(followerId: myUid, followingId: userId) }
@@ -76,6 +84,7 @@ final class DiscoverViewModel: ObservableObject {
             followedIds.insert(userId)
             Task { await firestore.follow(followerId: myUid, followingId: userId) }
         }
+        return true
     }
 
     func isFollowing(userId: String) -> Bool {
@@ -122,6 +131,7 @@ enum MockDiscoverUser {
 // MARK: - View
 struct DiscoverView: View {
     @StateObject private var vm = DiscoverViewModel()
+    @EnvironmentObject var coordinator: AppCoordinator
 
     var body: some View {
         ZStack {
@@ -154,7 +164,14 @@ struct DiscoverView: View {
                                     user: user,
                                     isFollowing: vm.followedIds.contains(user.id),
                                     onFollow: {
-                                        withAnimation { vm.toggleFollow(userId: user.id) }
+                                        withAnimation {
+                                            let ok = vm.toggleFollow(userId: user.id)
+                                            if !ok {
+                                                coordinator.requestSignIn(
+                                                    context: "سجّل دخولك عشان تتابع المستخدمين وتحفظ متابعاتك"
+                                                )
+                                            }
+                                        }
                                     }
                                 )
                                 .padding(.horizontal, 20)
