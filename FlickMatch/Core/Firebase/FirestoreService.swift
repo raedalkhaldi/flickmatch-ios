@@ -211,4 +211,42 @@ final class FirestoreService: ObservableObject {
         return []
         #endif
     }
+
+    // MARK: - Account Deletion (Apple requirement)
+    /// Permanently deletes every document associated with a user:
+    /// profile, ratings, follows (in both directions). Safe to call even
+    /// if some queries fail — best-effort deletion.
+    func deleteAllUserData(uid: String) async {
+        #if canImport(FirebaseFirestore)
+        // 1. Ratings (id pattern: "\(uid)_\(type)_\(contentId)")
+        if let snap = try? await db.collection("ratings")
+            .whereField("userId", isEqualTo: uid)
+            .getDocuments() {
+            for doc in snap.documents {
+                try? await doc.reference.delete()
+            }
+        }
+
+        // 2. Follows where the user is the follower
+        if let snap = try? await db.collection("follows")
+            .whereField("followerId", isEqualTo: uid)
+            .getDocuments() {
+            for doc in snap.documents {
+                try? await doc.reference.delete()
+            }
+        }
+
+        // 3. Follows where the user is being followed
+        if let snap = try? await db.collection("follows")
+            .whereField("followingId", isEqualTo: uid)
+            .getDocuments() {
+            for doc in snap.documents {
+                try? await doc.reference.delete()
+            }
+        }
+
+        // 4. User profile document
+        try? await db.collection("users").document(uid).delete()
+        #endif
+    }
 }

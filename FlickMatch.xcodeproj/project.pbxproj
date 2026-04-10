@@ -17,6 +17,7 @@
 		27CC0CAFF8153507A174843B /* Rating.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04DDBF4D26EEA6CC375E2876 /* Rating.swift */; };
 		35AA830F35E2E271791D36E3 /* MediaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09E4A6DEA3012D3A63BB981E /* MediaDetailView.swift */; };
 		391C105A14E36673DC4A4EFF /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F876771026CB992E34F4C25F /* MediaItem.swift */; };
+		3D9B922B0E97879CD955CA28 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36EBD6F2E7D27EA1BFE8BF9E /* SettingsView.swift */; };
 		4DD5D34C334C7EAB0C711FA1 /* TMDbService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D7F7CFD7004E7F780785F0 /* TMDbService.swift */; };
 		55D1C5B4A44718945253D0C1 /* RatingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE63CFBE26FDB11CA17102C4 /* RatingViewModel.swift */; };
 		56791502B64D8219722F33DD /* Series.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D184BEFC892EC0E5F0927 /* Series.swift */; };
@@ -61,6 +62,7 @@
 		1AEEB098C9703AE5C283FB68 /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		1C5D184BEFC892EC0E5F0927 /* Series.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Series.swift; sourceTree = "<group>"; };
 		2A9531949319DC2A31441F46 /* WatchProvidersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchProvidersView.swift; sourceTree = "<group>"; };
+		36EBD6F2E7D27EA1BFE8BF9E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		381776E9D974AE88511D5381 /* Movie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Movie.swift; sourceTree = "<group>"; };
 		38704AB609DFA3895467E5DF /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		4B1C96DBFE02532EC2675EE3 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				3AC2C3F93B49733BE1A706B5 /* Rating */,
 				62E036EBDA2A6315A44C4E4B /* Recommendations */,
 				1F6D2CA94B560B07BC73FE43 /* Search */,
+				D3A80330E1ADCD26BC14A985 /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -299,6 +302,14 @@
 				031D8AB94C1383EAA11A33DC /* FlickMatchApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		D3A80330E1ADCD26BC14A985 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				36EBD6F2E7D27EA1BFE8BF9E /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		E423DB036A4F8EB23A3EDE49 /* Profile */ = {
@@ -435,6 +446,7 @@
 				1E67E73D1331E5CF75D62CC9 /* RecommendationsView.swift in Sources */,
 				D64220C577A1F46A88269654 /* SearchView.swift in Sources */,
 				56791502B64D8219722F33DD /* Series.swift in Sources */,
+				3D9B922B0E97879CD955CA28 /* SettingsView.swift in Sources */,
 				FA9E0EA4B413B87E13A70CBB /* StarRatingView.swift in Sources */,
 				4DD5D34C334C7EAB0C711FA1 /* TMDbService.swift in Sources */,
 				203FAE2280FFFA263E635FD1 /* TrailerButton.swift in Sources */,
@@ -480,7 +492,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.2.4;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.flickmatch.app;
 				PRODUCT_NAME = FlickMatch;
 				PROVISIONING_PROFILE_SPECIFIER = "FlickMatch AppStore";
@@ -503,7 +515,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.2.4;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.flickmatch.app;
 				PRODUCT_NAME = FlickMatch;
 				PROVISIONING_PROFILE_SPECIFIER = "FlickMatch AppStore";

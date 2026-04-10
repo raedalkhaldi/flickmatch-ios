@@ -61,12 +61,40 @@ struct AuthView: View {
                 Spacer()
 
                 // Footer
-                Text("بتسجيلك توافق على شروط الاستخدام وسياسة الخصوصية")
-                    .font(AppTheme.arabic(11))
-                    .foregroundColor(AppTheme.textDim)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 30)
+                VStack(spacing: 8) {
+                    Text("بتسجيلك توافق على:")
+                        .font(AppTheme.arabic(11))
+                        .foregroundColor(AppTheme.textDim)
+
+                    HStack(spacing: 14) {
+                        Button {
+                            if let url = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/terms.html") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            Text("شروط الاستخدام")
+                                .font(AppTheme.arabic(11, weight: .semibold))
+                                .foregroundColor(AppTheme.gold)
+                                .underline()
+                        }
+                        Text("•")
+                            .font(.system(size: 11))
+                            .foregroundColor(AppTheme.textDim)
+                        Button {
+                            if let url = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/privacy.html") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            Text("سياسة الخصوصية")
+                                .font(AppTheme.arabic(11, weight: .semibold))
+                                .foregroundColor(AppTheme.gold)
+                                .underline()
+                        }
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+                .padding(.bottom, 30)
             }
         }
     }

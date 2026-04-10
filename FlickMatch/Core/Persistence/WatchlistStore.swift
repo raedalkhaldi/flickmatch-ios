@@ -65,6 +65,12 @@ final class WatchlistStore: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Wipe the entire watchlist (used by account deletion)
+    func deleteAll() {
+        defaults.removeObject(forKey: storageKey)
+        objectWillChange.send()
+    }
+
     private func persist(_ items: [Int: WatchlistItem]) {
         if let data = try? JSONEncoder().encode(items) {
             defaults.set(data, forKey: storageKey)

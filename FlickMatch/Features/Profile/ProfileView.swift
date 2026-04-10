@@ -8,6 +8,7 @@ struct ProfileView: View {
     @State private var selectedTab: ProfileTab = .movies
     @State private var followingUsers: [FollowingUser] = []
     @State private var isLoadingFollowing = true
+    @State private var showSettings = false
 
     enum ProfileTab { case movies, series, watchlist, following }
 
@@ -36,6 +37,23 @@ struct ProfileView: View {
             AppTheme.background.ignoresSafeArea()
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
+                    // Top bar with settings gear
+                    HStack {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(AppTheme.textDim)
+                                .frame(width: 36, height: 36)
+                                .background(AppTheme.surface)
+                                .clipShape(Circle())
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+
                     // Header
                     VStack(spacing: 12) {
                         ZStack {
@@ -68,23 +86,8 @@ struct ProfileView: View {
                             ProfileStat(value: "\(ratingStore.ratedCount(contentType: .series))", label: "مسلسلات")
                             ProfileStat(value: "\(followingUsers.count)", label: "متابَع")
                         }
-
-                        // Sign out
-                        Button {
-                            auth.signOut()
-                        } label: {
-                            Text("تسجيل خروج")
-                                .font(AppTheme.arabic(12))
-                                .foregroundColor(AppTheme.textDim)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 6)
-                                .overlay(
-                                    Capsule().stroke(Color(hex: "#333333"), lineWidth: 1)
-                                )
-                                .clipShape(Capsule())
-                        }
                     }
-                    .padding(.top, 30)
+                    .padding(.top, 10)
                     .padding(.bottom, 20)
 
                     // Tabs
@@ -111,6 +114,10 @@ struct ProfileView: View {
         .animation(.easeInOut(duration: 0.2), value: selectedTab)
         .onAppear {
             Task { await loadFollowing() }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environmentObject(auth)
         }
     }
 

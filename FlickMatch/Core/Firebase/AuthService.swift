@@ -64,6 +64,24 @@ final class AuthService: ObservableObject {
         isAuthenticated = false
     }
 
+    /// Permanently delete the account: wipe Firestore data, local ratings/watchlist,
+    /// then sign out. Required by App Store Review Guideline 5.1.1(v).
+    func deleteAccount() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        if let uid = userId {
+            await FirestoreService.shared.deleteAllUserData(uid: uid)
+        }
+
+        // Local caches
+        RatingStore.shared.deleteAll()
+        WatchlistStore.shared.deleteAll()
+
+        // Sign out last so UI transitions back to AuthView
+        signOut()
+    }
+
     /// Check if Apple ID credential is still valid
     func validateSession() {
         guard let uid = userId else { return }

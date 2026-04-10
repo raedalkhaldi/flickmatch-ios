@@ -79,6 +79,13 @@ final class RatingStore: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Wipe every stored rating (used by account deletion)
+    func deleteAll() {
+        defaults.removeObject(forKey: moviesKey)
+        defaults.removeObject(forKey: seriesKey)
+        objectWillChange.send()
+    }
+
     private func persist(_ ratings: [Int: StoredRating], contentType: ContentItemType) {
         if let data = try? JSONEncoder().encode(ratings) {
             defaults.set(data, forKey: key(for: contentType))
