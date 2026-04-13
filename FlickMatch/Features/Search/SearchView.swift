@@ -266,7 +266,7 @@ struct SuggestionPosterCard: View {
             }
 
             VStack(spacing: 2) {
-                Text(media.originalTitle)
+                Text(media.title)
                     .font(AppTheme.english(11, weight: .semibold))
                     .foregroundColor(AppTheme.textPrimary)
                     .lineLimit(1)
@@ -308,7 +308,7 @@ struct SearchResultRow: View {
             .clipped()
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(media.originalTitle)
+                Text(media.title)
                     .font(AppTheme.english(14, weight: .semibold))
                     .foregroundColor(AppTheme.textPrimary)
                     .lineLimit(1)

@@ -21,12 +21,12 @@ struct MediaCard: View {
                 )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    // English title
-                    Text(media.originalTitle)
+                    // Primary title (English from en-US, or localized)
+                    Text(media.title)
                         .font(AppTheme.english(15, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
                         .lineLimit(2)
-                    // Arabic title
+                    // Secondary title (Arabic if available)
                     if !media.localizedTitle.isEmpty {
                         Text(media.localizedTitle)
                             .font(AppTheme.arabic(12))

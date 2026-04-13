@@ -21,7 +21,7 @@ final class RatingViewModel: ObservableObject {
     @Published var matchPercentage: Int = 0
     @Published var currentRound: Int = 1
     @Published var errorMessage: String? = nil
-    @Published var selectedGenreId: Int? = nil    // nil = all genres
+    @Published var excludedGenreIds: Set<Int> = []  // genres to hide
 
     let contentType: ContentItemType
     private let tmdb = TMDbService.shared
@@ -38,7 +38,12 @@ final class RatingViewModel: ObservableObject {
     }
 
     var canSubmit: Bool {
-        ratedCount >= 5 || store.ratedCount(contentType: contentType) >= 5
+        // Count both rated (score > 0) and "not seen" (score == nil) as
+        // interactions. The user shouldn't be stuck because they haven't
+        // seen enough titles — marking "ما شفته" is a valid input.
+        let interacted = pendingRatings.count  // rated + not-seen
+        let hasEnoughRatings = ratedCount >= 3 // at least 3 actual scores
+        return (interacted >= 5 && hasEnoughRatings) || store.ratedCount(contentType: contentType) >= 3
     }
 
     var progressValue: Double {
@@ -151,21 +156,33 @@ final class RatingViewModel: ObservableObject {
     }
 
     // MARK: - Private
-    /// Called when the user picks a genre from the filter chips.
-    func applyGenreFilter(_ genreId: Int?) {
-        selectedGenreId = genreId
-        Task {
-            phase = .loading
-            pendingRatings = [:]
-            await loadRound(1)
+    /// Toggle a genre exclusion. Tapping a genre hides it from the list
+    /// without leaving the rating phase or losing existing ratings.
+    func toggleExcludeGenre(_ genreId: Int) {
+        if excludedGenreIds.contains(genreId) {
+            excludedGenreIds.remove(genreId)
+        } else {
+            excludedGenreIds.insert(genreId)
+        }
+    }
+
+    /// Items filtered by excluded genres (client-side filter).
+    var filteredMediaItems: [AnyMedia] {
+        guard !excludedGenreIds.isEmpty else { return mediaItems }
+        return mediaItems.filter { media in
+            let ids: [Int]
+            switch media {
+            case .movie(let m): ids = m.genreIds
+            case .series(let s): ids = s.genreIds
+            }
+            return ids.allSatisfy { !excludedGenreIds.contains($0) }
         }
     }
 
     private func loadRound(_ round: Int) async {
         do {
             let items = try await tmdb.fetchRatingRound(
-                contentType: contentType, round: round,
-                withGenre: selectedGenreId
+                contentType: contentType, round: round
             )
             mediaItems = items
             for item in items {

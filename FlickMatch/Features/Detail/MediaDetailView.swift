@@ -59,8 +59,8 @@ struct MediaDetailView: View {
                         .offset(y: -60)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            // English title
-                            Text(displayMedia.originalTitle)
+                            // Primary title (English)
+                            Text(displayMedia.title)
                                 .font(AppTheme.english(20, weight: .bold))
                                 .foregroundColor(AppTheme.textPrimary)
                                 .lineLimit(2)

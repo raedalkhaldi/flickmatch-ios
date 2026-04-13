@@ -39,19 +39,20 @@ struct RatingPhaseView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 8)
 
-            // Genre filter chips
+            // Genre filter chips (exclude mode)
             if !vm.genres.isEmpty {
                 GenreFilterChips(
                     genres: vm.genres,
-                    selectedId: vm.selectedGenreId,
-                    onSelect: { vm.applyGenreFilter($0) }
+                    excludedIds: vm.excludedGenreIds,
+                    onToggle: { vm.toggleExcludeGenre($0) }
                 )
                 .padding(.bottom, 8)
             }
 
-            // Media cards
+            // Media cards (filtered)
+            let items = vm.filteredMediaItems
             LazyVStack(spacing: 14) {
-                ForEach(Array(vm.mediaItems.enumerated()), id: \.element.id) { idx, media in
+                ForEach(Array(items.enumerated()), id: \.element.id) { idx, media in
                     let rating = Binding<Int?>(
                         get: { vm.pendingRatings[media.id]?.score },
                         set: { vm.setRating(contentId: media.id, score: $0) }
@@ -73,8 +74,20 @@ struct RatingPhaseView: View {
                 }
             }
 
+            if items.isEmpty && !vm.excludedGenreIds.isEmpty {
+                VStack(spacing: 8) {
+                    Text("ما في نتائج")
+                        .font(AppTheme.arabic(14, weight: .semibold))
+                        .foregroundColor(AppTheme.textDim)
+                    Text("جرّب تشيل بعض الفلاتر")
+                        .font(AppTheme.arabic(12))
+                        .foregroundColor(AppTheme.textDim)
+                }
+                .padding(.top, 30)
+            }
+
             // Submit button
-            Button(action: vm.submitRatings) {
+            Button { vm.submitRatings() } label: {
                 Text("اعرض التوصيات ✨")
                     .font(AppTheme.arabic(16, weight: .bold))
                     .foregroundColor(AppTheme.background)

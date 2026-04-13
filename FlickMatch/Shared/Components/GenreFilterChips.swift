@@ -1,42 +1,37 @@
 import SwiftUI
 
+/// Horizontal genre chips in "exclude" mode.
+/// All genres start visible (active). Tapping one crosses it out and hides
+/// matching items from the rating list. Tapping again restores it.
 struct GenreFilterChips: View {
     let genres: [Genre]
-    let selectedId: Int?
-    let onSelect: (Int?) -> Void
+    let excludedIds: Set<Int>
+    let onToggle: (Int) -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                // "All" chip
-                chipButton(label: "الكل", isSelected: selectedId == nil) {
-                    onSelect(nil)
-                }
-
                 ForEach(genres) { genre in
-                    chipButton(label: genre.name, isSelected: selectedId == genre.id) {
-                        onSelect(selectedId == genre.id ? nil : genre.id)
+                    let isExcluded = excludedIds.contains(genre.id)
+                    Button { onToggle(genre.id) } label: {
+                        Text(genre.name)
+                            .font(AppTheme.arabic(12, weight: .regular))
+                            .strikethrough(isExcluded, color: AppTheme.accent)
+                            .foregroundColor(isExcluded ? AppTheme.textDim.opacity(0.4) : AppTheme.textPrimary)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(isExcluded ? AppTheme.accent.opacity(0.08) : AppTheme.surface)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(
+                                    isExcluded ? AppTheme.accent.opacity(0.3) : Color(hex: "#252530"),
+                                    lineWidth: 1
+                                )
+                            )
                     }
                 }
             }
             .padding(.horizontal, 20)
-        }
-    }
-
-    private func chipButton(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(AppTheme.arabic(12, weight: isSelected ? .bold : .regular))
-                .foregroundColor(isSelected ? AppTheme.background : AppTheme.textDim)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(isSelected ? AppTheme.gold : AppTheme.surface)
-                .cornerRadius(14)
-                .overlay(
-                    Capsule()
-                        .stroke(isSelected ? Color.clear : Color(hex: "#252530"), lineWidth: 1)
-                )
-                .clipShape(Capsule())
         }
     }
 }

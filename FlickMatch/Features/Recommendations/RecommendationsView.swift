@@ -106,7 +106,7 @@ struct RecommendationCard: View {
                 )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(recommendation.media.originalTitle)
+                    Text(recommendation.media.title)
                         .font(AppTheme.english(15, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
                         .lineLimit(2)
