@@ -102,7 +102,7 @@ struct AuthView: View {
 
                     HStack(spacing: 14) {
                         Button {
-                            if let url = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/terms.html") {
+                            if let url = URL(string: "https://raedalkhaldi.github.io/flickmatch-pages/terms.html") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
@@ -115,7 +115,7 @@ struct AuthView: View {
                             .font(.system(size: 11))
                             .foregroundColor(AppTheme.textDim)
                         Button {
-                            if let url = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/privacy.html") {
+                            if let url = URL(string: "https://raedalkhaldi.github.io/flickmatch-pages/privacy.html") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {

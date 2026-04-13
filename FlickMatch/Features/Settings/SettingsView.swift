@@ -10,9 +10,9 @@ struct SettingsView: View {
     @State private var isDeleting = false
     @State private var showHandleEditor = false
 
-    private static let privacyURL = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/privacy.html")!
-    private static let termsURL   = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/terms.html")!
-    private static let supportURL = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/support.html")!
+    private static let privacyURL = URL(string: "https://raedalkhaldi.github.io/flickmatch-pages/privacy.html")!
+    private static let termsURL   = URL(string: "https://raedalkhaldi.github.io/flickmatch-pages/terms.html")!
+    private static let supportURL = URL(string: "https://raedalkhaldi.github.io/flickmatch-pages/support.html")!
     private static let tmdbURL    = URL(string: "https://www.themoviedb.org/")!
 
     private var appVersion: String {
