@@ -39,6 +39,16 @@ struct RatingPhaseView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 8)
 
+            // Genre filter chips
+            if !vm.genres.isEmpty {
+                GenreFilterChips(
+                    genres: vm.genres,
+                    selectedId: vm.selectedGenreId,
+                    onSelect: { vm.applyGenreFilter($0) }
+                )
+                .padding(.bottom, 8)
+            }
+
             // Media cards
             LazyVStack(spacing: 14) {
                 ForEach(Array(vm.mediaItems.enumerated()), id: \.element.id) { idx, media in

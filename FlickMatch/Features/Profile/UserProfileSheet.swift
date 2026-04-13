@@ -5,7 +5,7 @@ struct UserProfileSheet: View {
     let userId: String
     let userName: String
     let tasteBadge: String
-    let matchPercentage: Int
+    let matchPercentage: Int?
 
     @State private var ratings: [FirestoreRating] = []
     @State private var isLoading = true
@@ -68,17 +68,27 @@ struct UserProfileSheet: View {
                                 .foregroundColor(AppTheme.textDim)
 
                             // Match badge
-                            HStack(spacing: 4) {
-                                Image(systemName: "heart.fill")
-                                    .font(.system(size: 10))
-                                Text("تطابق \(matchPercentage)%")
-                                    .font(AppTheme.arabic(12, weight: .semibold))
+                            if let pct = matchPercentage {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "heart.fill")
+                                        .font(.system(size: 10))
+                                    Text("تطابق \(pct)%")
+                                        .font(AppTheme.arabic(12, weight: .semibold))
+                                }
+                                .foregroundColor(AppTheme.green)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 6)
+                                .background(AppTheme.green.opacity(0.08))
+                                .cornerRadius(12)
+                            } else {
+                                Text("قيّم أفلام أكثر عشان نحسب التطابق")
+                                    .font(AppTheme.arabic(11))
+                                    .foregroundColor(AppTheme.textDim)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 6)
+                                    .background(AppTheme.surface)
+                                    .cornerRadius(12)
                             }
-                            .foregroundColor(AppTheme.green)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .background(AppTheme.green.opacity(0.08))
-                            .cornerRadius(12)
 
                             // Follow button
                             Button {

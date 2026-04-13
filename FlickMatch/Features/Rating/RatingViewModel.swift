@@ -21,6 +21,7 @@ final class RatingViewModel: ObservableObject {
     @Published var matchPercentage: Int = 0
     @Published var currentRound: Int = 1
     @Published var errorMessage: String? = nil
+    @Published var selectedGenreId: Int? = nil    // nil = all genres
 
     let contentType: ContentItemType
     private let tmdb = TMDbService.shared
@@ -150,9 +151,22 @@ final class RatingViewModel: ObservableObject {
     }
 
     // MARK: - Private
+    /// Called when the user picks a genre from the filter chips.
+    func applyGenreFilter(_ genreId: Int?) {
+        selectedGenreId = genreId
+        Task {
+            phase = .loading
+            pendingRatings = [:]
+            await loadRound(1)
+        }
+    }
+
     private func loadRound(_ round: Int) async {
         do {
-            let items = try await tmdb.fetchRatingRound(contentType: contentType, round: round)
+            let items = try await tmdb.fetchRatingRound(
+                contentType: contentType, round: round,
+                withGenre: selectedGenreId
+            )
             mediaItems = items
             for item in items {
                 if let saved = store.fetch(contentId: item.id, contentType: contentType) {

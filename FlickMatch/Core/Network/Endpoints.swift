@@ -9,8 +9,8 @@ protocol Endpoint {
 
 // MARK: - TMDb Endpoints
 enum TMDbEndpoint: Endpoint {
-    case topMovies(page: Int)
-    case topSeries(page: Int)
+    case topMovies(page: Int, withGenre: Int? = nil, withoutGenre: Int? = nil)
+    case topSeries(page: Int, withGenre: Int? = nil, withoutGenre: Int? = nil)
     case movieDetails(id: Int)
     case seriesDetails(id: Int)
     case movieTrailers(id: Int)
@@ -63,18 +63,29 @@ enum TMDbEndpoint: Endpoint {
 
     private var queryItems: [URLQueryItem] {
         var items: [URLQueryItem] = []
-        // Videos: don't filter by language (most trailers are English)
-        // Other endpoints: use Arabic
+        // Language strategy:
+        // - Videos/providers/ratings: no language filter
+        // - Top rated lists: en-US so titles are always English (avoids Japanese/Korean original titles)
+        // - Everything else (search, details, genres): ar-SA for Arabic UI
         switch self {
         case .movieTrailers, .seriesTrailers, .movieWatchProviders, .seriesWatchProviders,
              .movieReleaseDates, .seriesContentRatings:
             break // no language filter for videos/providers/ratings
+        case .topMovies, .topSeries:
+            items.append(URLQueryItem(name: "language", value: "en-US"))
         default:
             items.append(URLQueryItem(name: "language", value: "ar-SA"))
         }
         switch self {
-        case .topMovies(let page), .topSeries(let page):
+        case .topMovies(let page, let withGenre, let withoutGenre),
+             .topSeries(let page, let withGenre, let withoutGenre):
             items.append(URLQueryItem(name: "page", value: "\(page)"))
+            if let g = withGenre {
+                items.append(URLQueryItem(name: "with_genres", value: "\(g)"))
+            }
+            if let g = withoutGenre {
+                items.append(URLQueryItem(name: "without_genres", value: "\(g)"))
+            }
         case .searchMovies(let q), .searchSeries(let q):
             items.append(URLQueryItem(name: "query", value: q))
         default:

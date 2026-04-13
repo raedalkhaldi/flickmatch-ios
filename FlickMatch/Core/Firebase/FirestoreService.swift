@@ -78,6 +78,28 @@ final class FirestoreService: ObservableObject {
         #endif
     }
 
+    /// Check if a handle is already taken by another user.
+    func isHandleTaken(_ handle: String, excludingUid uid: String) async -> Bool {
+        #if canImport(FirebaseFirestore)
+        do {
+            let snap = try await db.collection("users")
+                .whereField("handle", isEqualTo: handle)
+                .limit(to: 1)
+                .getDocuments()
+            return snap.documents.contains { $0.documentID != uid }
+        } catch { return false }
+        #else
+        return false
+        #endif
+    }
+
+    /// Update the user's handle (username).
+    func updateHandle(userId: String, handle: String) async {
+        #if canImport(FirebaseFirestore)
+        try? await db.collection("users").document(userId).updateData(["handle": handle])
+        #endif
+    }
+
     // MARK: - Ratings
     func saveRating(userId: String, contentId: Int, contentType: String, score: Int, title: String, posterPath: String, year: String) async {
         #if canImport(FirebaseFirestore)

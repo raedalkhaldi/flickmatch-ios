@@ -14,7 +14,7 @@ final class DiscoverViewModel: ObservableObject {
         let id: String
         let name: String
         let tasteBadge: String
-        let matchPercentage: Int
+        let matchPercentage: Int?   // nil = not enough shared ratings
         let topRatings: [FirestoreRating]
     }
 
@@ -54,8 +54,10 @@ final class DiscoverViewModel: ObservableObject {
             ))
         }
 
-        // Sort by match percentage
-        users = discoverUsers.sorted { $0.matchPercentage > $1.matchPercentage }
+        // Sort by match percentage (real matches first, nil last)
+        users = discoverUsers.sorted {
+            ($0.matchPercentage ?? -1) > ($1.matchPercentage ?? -1)
+        }
 
         // If no Firestore users, show mock data
         if users.isEmpty {
@@ -91,13 +93,14 @@ final class DiscoverViewModel: ObservableObject {
         followedIds.contains(userId)
     }
 
-    private func calculateMatch(myRatings: [Int: Int], otherRatings: [FirestoreRating]) -> Int {
+    /// Returns nil when there aren't enough shared ratings to compute a
+    /// meaningful match — callers should show "rate more" instead of a %.
+    private func calculateMatch(myRatings: [Int: Int], otherRatings: [FirestoreRating]) -> Int? {
         let otherMap = Dictionary(uniqueKeysWithValues: otherRatings.map { ($0.contentId, $0.score) })
         let sharedIds = Set(myRatings.keys).intersection(Set(otherMap.keys))
 
         guard sharedIds.count >= 2 else {
-            // Not enough shared ratings — estimate based on genre similarity
-            return Int.random(in: 55...75)
+            return nil
         }
 
         var dotProduct = 0.0
@@ -111,7 +114,7 @@ final class DiscoverViewModel: ObservableObject {
             otherMag += other * other
         }
         let magnitude = sqrt(myMag) * sqrt(otherMag)
-        guard magnitude > 0 else { return 50 }
+        guard magnitude > 0 else { return nil }
 
         return min(99, Int((dotProduct / magnitude) * 100))
     }
@@ -120,11 +123,11 @@ final class DiscoverViewModel: ObservableObject {
 // MARK: - Mock data for offline/empty state
 enum MockDiscoverUser {
     static let samples: [DiscoverViewModel.DiscoverUser] = [
-        .init(id: "mock1", name: "أحمد الزهراني", tasteBadge: "دراما + إثارة", matchPercentage: 92, topRatings: []),
-        .init(id: "mock2", name: "سارة المالكي",  tasteBadge: "خيال علمي + أكشن", matchPercentage: 87, topRatings: []),
-        .init(id: "mock3", name: "خالد العمري",   tasteBadge: "جريمة + تشويق",  matchPercentage: 83, topRatings: []),
-        .init(id: "mock4", name: "نورة السبيعي",  tasteBadge: "رومانسي + درامي", matchPercentage: 79, topRatings: []),
-        .init(id: "mock5", name: "فيصل القحطاني", tasteBadge: "كوميدي + دراما",  matchPercentage: 74, topRatings: []),
+        .init(id: "mock1", name: "أحمد الزهراني", tasteBadge: "دراما + إثارة", matchPercentage: nil, topRatings: []),
+        .init(id: "mock2", name: "سارة المالكي",  tasteBadge: "خيال علمي + أكشن", matchPercentage: nil, topRatings: []),
+        .init(id: "mock3", name: "خالد العمري",   tasteBadge: "جريمة + تشويق",  matchPercentage: nil, topRatings: []),
+        .init(id: "mock4", name: "نورة السبيعي",  tasteBadge: "رومانسي + درامي", matchPercentage: nil, topRatings: []),
+        .init(id: "mock5", name: "فيصل القحطاني", tasteBadge: "كوميدي + دراما",  matchPercentage: nil, topRatings: []),
     ]
 }
 
@@ -221,9 +224,15 @@ struct DiscoverUserCard: View {
                         Text(user.tasteBadge)
                             .font(AppTheme.arabic(11))
                             .foregroundColor(AppTheme.textDim)
-                        Text("تطابق \(user.matchPercentage)%")
-                            .font(AppTheme.arabic(10))
-                            .foregroundColor(AppTheme.green)
+                        if let pct = user.matchPercentage {
+                            Text("تطابق \(pct)%")
+                                .font(AppTheme.arabic(10))
+                                .foregroundColor(AppTheme.green)
+                        } else {
+                            Text("قيّم أكثر عشان نحسب التطابق")
+                                .font(AppTheme.arabic(10))
+                                .foregroundColor(AppTheme.textDim)
+                        }
                     }
 
                     Spacer()

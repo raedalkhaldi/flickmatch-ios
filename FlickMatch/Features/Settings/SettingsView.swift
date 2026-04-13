@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var showDeleteConfirm = false
     @State private var showSignOutConfirm = false
     @State private var isDeleting = false
+    @State private var showHandleEditor = false
 
     private static let privacyURL = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/privacy.html")!
     private static let termsURL   = URL(string: "https://raedalkhaldi.github.io/flickmatch-ios/terms.html")!
@@ -230,28 +231,36 @@ struct SettingsView: View {
 
     // MARK: - Account card
     private var accountCard: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: [AppTheme.gold, AppTheme.goldDim],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 48, height: 48)
-                Text("👤").font(.system(size: 22))
-            }
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(auth.displayName ?? "مستخدم")
-                    .font(AppTheme.arabic(15, weight: .bold))
-                    .foregroundColor(AppTheme.textPrimary)
-                if let uid = auth.userId {
-                    Text("@\(String(uid.prefix(8)))")
+        Button { showHandleEditor = true } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [AppTheme.gold, AppTheme.goldDim],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 48, height: 48)
+                    Text("👤").font(.system(size: 22))
+                }
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(auth.displayName ?? "مستخدم")
+                        .font(AppTheme.arabic(15, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text(auth.handle ?? "@\(String(auth.userId?.prefix(8) ?? ""))")
                         .font(.system(size: 11))
                         .foregroundColor(AppTheme.textDim)
                 }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Image(systemName: "pencil")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppTheme.textDim)
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(14)
+            .cardStyle()
         }
-        .padding(14)
-        .cardStyle()
+        .sheet(isPresented: $showHandleEditor) {
+            HandleEditorSheet()
+                .environmentObject(auth)
+        }
     }
 
     // MARK: - Helpers

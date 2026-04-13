@@ -80,8 +80,8 @@ struct ProfileView: View {
                                 Text(auth.displayName ?? "أنت")
                                     .font(AppTheme.arabic(20, weight: .bold))
                                     .foregroundColor(AppTheme.textPrimary)
-                                if let uid = auth.userId {
-                                    Text("@\(String(uid.prefix(8)))")
+                                if let h = auth.handle, !h.isEmpty {
+                                    Text(h)
                                         .font(AppTheme.arabic(13))
                                         .foregroundColor(AppTheme.textDim)
                                 }
@@ -126,6 +126,7 @@ struct ProfileView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environmentObject(auth)
+                .environmentObject(coordinator)
         }
     }
 

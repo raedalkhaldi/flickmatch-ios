@@ -22,30 +22,27 @@ struct StarRatingView: View {
         HStack(spacing: 0) {
             ForEach(1...maxRating, id: \.self) { star in
                 let isFilled = star <= (rating ?? 0)
-                Image(systemName: isFilled ? "star.fill" : "star")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: starSize, height: starSize)
-                    .foregroundColor(isFilled ? AppTheme.gold : AppTheme.textDim.opacity(0.3))
-                    .scaleEffect(isFilled ? 1.0 : 0.9)
-                    .frame(width: cellWidth, height: 44)
-            }
-        }
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                .onEnded { value in
-                    let x = value.location.x
-                    let tappedStar = max(1, min(maxRating, Int(x / cellWidth) + 1))
+                Button {
                     withAnimation(.easeInOut(duration: 0.12)) {
-                        if rating == tappedStar {
+                        if rating == star {
                             rating = nil
                         } else {
-                            rating = tappedStar
+                            rating = star
                         }
                     }
+                } label: {
+                    Image(systemName: isFilled ? "star.fill" : "star")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: starSize, height: starSize)
+                        .foregroundColor(isFilled ? AppTheme.gold : AppTheme.textDim.opacity(0.3))
+                        .scaleEffect(isFilled ? 1.0 : 0.9)
+                        .frame(width: cellWidth, height: 44)
+                        .contentShape(Rectangle())
                 }
-        )
+                .buttonStyle(.plain)
+            }
+        }
         .environment(\.layoutDirection, .leftToRight)
     }
 }

@@ -44,12 +44,25 @@ enum AnyMedia: Identifiable, Hashable {
         }
     }
 
-    /// Arabic title if different from original, otherwise empty
+    /// Secondary title — shows the Arabic or localized title when it differs
+    /// from the primary (English) title. Returns empty if both are the same
+    /// or if the "other" title uses a non-Arabic/Latin script (e.g. Japanese).
     var localizedTitle: String {
         let t = title
         let o = originalTitle
-        // If TMDb returned Arabic, title != originalTitle
-        return t != o ? t : ""
+        guard t != o else { return "" }
+        // When the API was called with en-US, `title` = English and
+        // `originalTitle` = original language (could be Japanese).
+        // When called with ar-SA, `title` = Arabic and `originalTitle` = original.
+        // We want to show the Arabic title as secondary — detect which is Arabic.
+        if t.rangeOfCharacter(from: CharacterSet(charactersIn: "\u{0600}"..."\u{06FF}")) != nil {
+            return t   // title is Arabic → show it
+        }
+        if o.rangeOfCharacter(from: CharacterSet(charactersIn: "\u{0600}"..."\u{06FF}")) != nil {
+            return o   // originalTitle is Arabic → show it
+        }
+        // Neither is Arabic — don't show a secondary title
+        return ""
     }
 
     var posterPath: String? {

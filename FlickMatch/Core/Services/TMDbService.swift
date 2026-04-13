@@ -8,8 +8,8 @@ final class TMDbService {
     private let client = APIClient.shared
 
     // MARK: - Movies
-    func fetchTopMovies(page: Int = 1) async throws -> [Movie] {
-        let response: MovieResponse = try await client.fetch(TMDbEndpoint.topMovies(page: page))
+    func fetchTopMovies(page: Int = 1, withGenre: Int? = nil, withoutGenre: Int? = nil) async throws -> [Movie] {
+        let response: MovieResponse = try await client.fetch(TMDbEndpoint.topMovies(page: page, withGenre: withGenre, withoutGenre: withoutGenre))
         return response.results
     }
 
@@ -23,8 +23,8 @@ final class TMDbService {
     }
 
     // MARK: - Series
-    func fetchTopSeries(page: Int = 1) async throws -> [Series] {
-        let response: SeriesResponse = try await client.fetch(TMDbEndpoint.topSeries(page: page))
+    func fetchTopSeries(page: Int = 1, withGenre: Int? = nil, withoutGenre: Int? = nil) async throws -> [Series] {
+        let response: SeriesResponse = try await client.fetch(TMDbEndpoint.topSeries(page: page, withGenre: withGenre, withoutGenre: withoutGenre))
         return response.results
     }
 
@@ -120,14 +120,14 @@ final class TMDbService {
 
     // MARK: - Rating Rounds
     // Returns 10 items per round (page-based)
-    func fetchRatingRound(contentType: ContentItemType, round: Int) async throws -> [AnyMedia] {
+    func fetchRatingRound(contentType: ContentItemType, round: Int, withGenre: Int? = nil, withoutGenre: Int? = nil) async throws -> [AnyMedia] {
         let page = round
         switch contentType {
         case .movie:
-            let movies = try await fetchTopMovies(page: page)
+            let movies = try await fetchTopMovies(page: page, withGenre: withGenre, withoutGenre: withoutGenre)
             return Array(movies.prefix(10)).map { .movie($0) }
         case .series:
-            let series = try await fetchTopSeries(page: page)
+            let series = try await fetchTopSeries(page: page, withGenre: withGenre, withoutGenre: withoutGenre)
             return Array(series.prefix(10)).map { .series($0) }
         }
     }

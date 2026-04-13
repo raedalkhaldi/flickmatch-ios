@@ -10,15 +10,18 @@ final class AuthService: ObservableObject {
     @Published var errorMessage: String?
     @Published var userId: String?
     @Published var displayName: String?
+    @Published var handle: String?
 
     private let userIdKey = "flickmatch_apple_user_id"
     private let displayNameKey = "flickmatch_apple_display_name"
+    private let handleKey = "flickmatch_user_handle"
 
     private init() {
         // Restore session from Keychain/UserDefaults
         if let savedId = UserDefaults.standard.string(forKey: userIdKey) {
             userId = savedId
             displayName = UserDefaults.standard.string(forKey: displayNameKey)
+            handle = UserDefaults.standard.string(forKey: handleKey)
             isAuthenticated = true
         }
     }
@@ -53,14 +56,22 @@ final class AuthService: ObservableObject {
             email: cred.email ?? ""
         )
 
+        // Load handle from Firestore
+        if let profile = await FirestoreService.shared.fetchUserProfile(uid: uid) {
+            handle = profile.handle
+            UserDefaults.standard.set(profile.handle, forKey: handleKey)
+        }
+
         isLoading = false
     }
 
     func signOut() {
         UserDefaults.standard.removeObject(forKey: userIdKey)
         UserDefaults.standard.removeObject(forKey: displayNameKey)
+        UserDefaults.standard.removeObject(forKey: handleKey)
         userId = nil
         displayName = nil
+        handle = nil
         isAuthenticated = false
     }
 
@@ -80,6 +91,15 @@ final class AuthService: ObservableObject {
 
         // Sign out last so UI transitions back to AuthView
         signOut()
+    }
+
+    /// Update the user's @handle.
+    func updateHandle(_ newHandle: String) async {
+        guard let uid = userId else { return }
+        let formatted = newHandle.hasPrefix("@") ? newHandle : "@\(newHandle)"
+        await FirestoreService.shared.updateHandle(userId: uid, handle: formatted)
+        handle = formatted
+        UserDefaults.standard.set(formatted, forKey: handleKey)
     }
 
     /// Check if Apple ID credential is still valid
